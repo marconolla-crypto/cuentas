@@ -1,0 +1,1 @@
+{"name": "Nuestras Cuentas", "short_name": "Cuentas", "start_url": "./", "scope": "./", "display": "standalone", "background_color": "#FAF8F4", "theme_color": "#FAF8F4", "orientation": "portrait", "icons": [{"src": "icon180.png", "sizes": "180x180", "type": "image/png", "purpose": "any"}]}
