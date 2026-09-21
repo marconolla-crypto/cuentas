@@ -48,7 +48,8 @@
 --sombra:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.7);
 }
 *{box-sizing:border-box}
-html,body{height:100%}
+html{-webkit-text-size-adjust:100%}
+html,body{height:100%;overflow-x:hidden}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
 #app{min-height:100%;display:flex;flex-direction:column;padding-bottom:78px}
@@ -131,7 +132,7 @@ font-family:var(--ui);font-size:15.5px;font-weight:600;padding:17px;border-radiu
 font-size:14px;font-weight:600;padding:14px 4px;cursor:pointer}
 .modo button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .modo button+button{border-left:1px solid var(--line-strong)}
-.note,.inp{width:100%;font-family:var(--ui);font-size:15px;padding:15px 14px;border-radius:11px;
+.note,.inp{width:100%;font-family:var(--ui);font-size:16px;padding:15px 14px;border-radius:11px;
 border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .inp{font-family:var(--num);text-align:right}
 .note:focus-visible,.inp:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
@@ -342,6 +343,13 @@ justify-content:center;padding:24px}
 .dueno b{color:var(--ink);font-weight:600}
 .cambiar{appearance:none;background:none;border:0;color:var(--accent);font-family:var(--ui);font-size:12.5px;
   font-weight:600;text-decoration:underline;cursor:pointer;padding:8px 4px}
+@media (display-mode: standalone){
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+#app{height:100%;overflow:hidden;padding-bottom:0}
+header.top{position:static}
+main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:20px}
+nav.tabs{position:static}
+}
 </style>
 <div id="app">
 <header class="top">
@@ -527,6 +535,7 @@ justify-content:center;padding:24px}
 <div class="rows" id="ltiRows"></div>
 </div>
 </section>
+</main>
 <nav class="tabs" id="nav" role="tablist">
 <button type="button" role="tab" data-v="captura" aria-selected="true">
 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Anotar</button>
