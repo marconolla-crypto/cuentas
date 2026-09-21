@@ -1877,13 +1877,18 @@ if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; renderPat(
 
 /* ===== carga inicial: trae la historia desde datos.json, una sola vez ===== */
 (async function cargaInicial(){
+  /* esperamos a que la sesión exista: si no, el servidor rechaza todo */
+  for(var t=0; t<900 && !(sbSes && sbSes.access_token); t++){
+    await new Promise(function(r){ setTimeout(r,400); });
+  }
+  if(!(sbSes && sbSes.access_token)) return;
   try{
     var r=await sbFetch('/meses?select=ym&limit=2');
     if(!r.ok) return;
     var hay=await r.json();
     if(hay.length>1) return;                 // ya hay historia, no hacemos nada
   }catch(e){ return; }
-  var d=document.createElement('div'); d.className='acceso'; d.style.zIndex='95';
+  var d=document.createElement('div'); d.className='acceso'; d.style.zIndex='85';
   d.innerHTML='<div class="accbox"><div class="accmarca">Traer la historia</div>'+
     '<p class="sub">La base está vacía. Cargamos los 91 meses y los 11,135 movimientos que ya teníamos.</p>'+
     '<div class="rows" id="ciR"></div>'+
