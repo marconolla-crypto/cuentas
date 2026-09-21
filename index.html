@@ -338,6 +338,10 @@ justify-content:center;padding:24px}
 .accbox .note{margin:4px 0 12px}
 .accbox .btn{margin-top:6px}
 .accbox .foot{color:var(--crit);min-height:16px;margin-top:8px}
+.dueno{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;justify-content:center}
+.dueno b{color:var(--ink);font-weight:600}
+.cambiar{appearance:none;background:none;border:0;color:var(--accent);font-family:var(--ui);font-size:12.5px;
+  font-weight:600;text-decoration:underline;cursor:pointer;padding:8px 4px}
 </style>
 <div id="app">
 <header class="top">
@@ -581,7 +585,9 @@ document.getElementById('periodo').textContent=MESES_L[hoy.getMonth()]+' '+hoy.g
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
 let db=null, movs=[], ingresos=[], rubrosExtra=[], montosRec={}, omisiones=[];
-let cap={ monto:'', sel:null, persona:'Marco', modo:'gasto' };
+let DUENO=null; try{ DUENO=localStorage.getItem('nc_duenio'); }catch(e){}
+let cap={ monto:'', sel:null, persona:DUENO||'Marco', modo:'gasto' };
+function fijaDueno(p){ DUENO=p; cap.persona=p; try{ localStorage.setItem('nc_duenio',p); }catch(e){} }
 let vista='captura', editando=null, mesVista=ymActual, cacheMes={};
 /* ---------- presupuesto ---------- */
 function corrVer(){ const b=Object.assign({},CORR);
@@ -624,9 +630,20 @@ const SUBT={'Gasto del mes':'Sale del sueldo de este mes',
 const SUBB=CFG.subtitulos||{};
 function renderCaptura(){
 const pc=document.getElementById('personas'); pc.innerHTML='';
-PERSONAS.forEach(p=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p;
-b.setAttribute('aria-pressed',String(cap.persona===p));
-b.addEventListener('click',()=>{cap.persona=p;renderCaptura();}); pc.appendChild(b); });
+if(DUENO){
+  const t=document.createElement('div'); t.className='dueno';
+  t.innerHTML='<b>'+esc(cap.persona)+'</b>'+(cap.persona!==DUENO?' · solo este gasto':'')+
+    ' <button type="button" class="cambiar" id="camDue">cambiar</button>';
+  pc.appendChild(t);
+  t.querySelector('#camDue').addEventListener('click',()=>{
+    const otro=PERSONAS.find(x=>x!==cap.persona)||PERSONAS[0];
+    cap.persona=otro; renderCaptura();
+  });
+} else {
+  PERSONAS.forEach(p=>{ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p;
+  b.setAttribute('aria-pressed',String(cap.persona===p));
+  b.addEventListener('click',()=>{cap.persona=p;renderCaptura();}); pc.appendChild(b); });
+}
 const gc=document.getElementById('grupos'); gc.innerHTML='';
 document.getElementById('selTitulo').textContent = cap.modo==='gasto' ? '¿En qué fue?' : '¿De dónde viene?';
 const sh=document.getElementById('selHint');
@@ -721,7 +738,7 @@ movs.push({id:'m'+Date.now().toString(36),monto:v,etiqueta:it.nom,grupo:it.key,b
 plan:planDe(it.key,it.plan),proyecto:it.proyecto||null,persona:cap.persona,
 nota:document.getElementById('nota').value.trim(),fecha:new Date().toISOString()});
 }
-cap.monto=''; cap.sel=null; document.getElementById('nota').value='';
+cap.monto=''; cap.sel=null; if(DUENO) cap.persona=DUENO; document.getElementById('nota').value='';
 renderCaptura(); await persistir(); toast((cap.modo==='ingreso'?'Ingreso · ':'Anotado · ')+mxnA(v));
 });
 function renderRecientes(){
@@ -1932,6 +1949,26 @@ if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; renderPat(
       setTimeout(function(){ location.reload(); },1500);
     }catch(err){ e.textContent='Se atoró: '+(err&&err.message||err);
                  b.disabled=false; b.textContent='Reintentar'; }
+  });
+})();
+
+/* ===== de quién es este teléfono: se pregunta una vez y se recuerda ===== */
+(async function quienEres(){
+  for(var t=0; t<900 && !(sbSes && sbSes.access_token); t++){
+    await new Promise(function(r){ setTimeout(r,400); });
+  }
+  if(DUENO) return;
+  var d=document.createElement('div'); d.className='acceso'; d.style.zIndex='86';
+  d.innerHTML='<div class="accbox"><div class="accmarca">¿Quién usa este teléfono?</div>'+
+    '<p class="sub">Lo que anotes aquí va a quedar a tu nombre sin que lo elijas cada vez. '+
+    'Siempre puedes cambiarlo en un gasto suelto.</p><div class="chips" id="qeC"></div></div>';
+  document.body.appendChild(d);
+  var c=d.querySelector('#qeC');
+  PERSONAS.forEach(function(p){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.style.flex='1';
+    b.style.justifyContent='center'; b.textContent=p;
+    b.addEventListener('click',function(){ fijaDueno(p); d.remove(); renderCaptura(); });
+    c.appendChild(b);
   });
 })();
 </script>
