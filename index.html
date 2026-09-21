@@ -1874,4 +1874,59 @@ if(typeof d.afore==='number') saldos.afore=d.afore;
 if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; renderPat(); } },()=>{});
 }catch(_){}
 })();
+
+/* ===== carga inicial: trae la historia desde datos.json, una sola vez ===== */
+(async function cargaInicial(){
+  try{
+    var r=await sbFetch('/meses?select=ym&limit=2');
+    if(!r.ok) return;
+    var hay=await r.json();
+    if(hay.length>1) return;                 // ya hay historia, no hacemos nada
+  }catch(e){ return; }
+  var d=document.createElement('div'); d.className='acceso'; d.style.zIndex='95';
+  d.innerHTML='<div class="accbox"><div class="accmarca">Traer la historia</div>'+
+    '<p class="sub">La base está vacía. Cargamos los 91 meses y los 11,135 movimientos que ya teníamos.</p>'+
+    '<div class="rows" id="ciR"></div>'+
+    '<button class="btn" id="ciB" style="margin-top:10px">Cargar</button>'+
+    '<button class="btn ghost" id="ciX" style="margin-top:8px">Ahora no</button>'+
+    '<p class="foot" id="ciE" style="min-height:18px;word-break:break-word"></p></div>';
+  document.body.appendChild(d);
+  document.getElementById('ciX').addEventListener('click',function(){ d.remove(); });
+  function paso(t){ var x=document.createElement('div'); x.className='row';
+    x.innerHTML='<div><div class="nm">'+t+'</div></div><div class="v">…</div>';
+    document.getElementById('ciR').appendChild(x); return x.querySelector('.v'); }
+  document.getElementById('ciB').addEventListener('click',async function(){
+    var b=document.getElementById('ciB'), e=document.getElementById('ciE');
+    b.disabled=true; b.textContent='Cargando…'; e.textContent='';
+    try{
+      var v0=paso('Bajando el archivo');
+      var datos=await (await fetch('datos.json',{cache:'no-store'})).json();
+      var claves=Object.keys(datos.meses).sort();
+      v0.textContent=claves.length+' meses';
+      var v1=paso('Guardando meses'), n=0, mv=0, malos=0;
+      for(var i=0;i<claves.length;i+=6){
+        var lote=claves.slice(i,i+6).map(function(ym){
+          return {ym:ym,items:datos.meses[ym].items||[],ingresos:datos.meses[ym].ingresos||[]}; });
+        var rr=await sbFetch('/meses?on_conflict=ym',{method:'POST',
+          headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(lote)});
+        if(rr.ok){ n+=lote.length; lote.forEach(function(x){ mv+=x.items.length; }); } else { malos+=lote.length; }
+        v1.textContent=n+' de '+claves.length+' · '+mv.toLocaleString('es-MX')+' movimientos';
+      }
+      var v2=paso('Configuración'), c=0, ks=Object.keys(datos.config||{});
+      for(var j=0;j<ks.length;j++){
+        var r2=await sbFetch('/config?on_conflict=k',{method:'POST',
+          headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+          body:JSON.stringify({k:ks[j],v:datos.config[ks[j]]})});
+        if(r2.ok) c++;
+        v2.textContent=c+' de '+ks.length;
+      }
+      if(malos){ e.textContent='Quedaron '+malos+' meses sin pasar. Vuelve a tocar Cargar.';
+                 b.disabled=false; b.textContent='Reintentar'; return; }
+      b.textContent='Listo'; e.style.color='var(--accent)';
+      e.textContent='Todo cargado. Recargando la app…';
+      setTimeout(function(){ location.reload(); },1500);
+    }catch(err){ e.textContent='Se atoró: '+(err&&err.message||err);
+                 b.disabled=false; b.textContent='Reintentar'; }
+  });
+})();
 </script>
