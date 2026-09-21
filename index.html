@@ -49,6 +49,11 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
+/* iOS hace zoom al tocar dos veces seguidas; esto lo apaga sin quitar el pellizco */
+button,input,select,textarea,a,label,.chip,.rub,.row,.minib,.recitem,.keys button,.colh,.bolsa,.hbar{
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.keys,.chips,.amount,nav.tabs{touch-action:manipulation;-webkit-touch-callout:none;
+  -webkit-user-select:none;user-select:none}
 html,body{height:100%;overflow-x:hidden}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
