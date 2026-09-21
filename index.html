@@ -52,7 +52,7 @@ html{-webkit-text-size-adjust:100%}
 html,body{height:100%;overflow-x:hidden}
 body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-0.01em}
-#app{min-height:100%;display:flex;flex-direction:column;padding-bottom:78px}
+#app{min-height:100%;display:flex;flex-direction:column}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--ground);border-bottom:1px solid var(--line);padding:13px 18px 11px}
 .brandrow{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .brand{font-family:var(--se);font-weight:600;font-size:18px;letter-spacing:-0.015em}
@@ -60,7 +60,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .periodo{font-family:var(--num);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 main{flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;max-width:760px;width:100%;margin:0 auto}
 .view[hidden]{display:none!important}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);
+nav.tabs{position:sticky;bottom:0;z-index:30;margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);
 background:var(--surface);border-top:1px solid var(--line);padding:8px 4px calc(9px + env(safe-area-inset-bottom,0px))}
 nav.tabs button{appearance:none;border:0;background:none;color:var(--faint);font-family:var(--ui);font-size:10.5px;
 font-weight:600;letter-spacing:.03em;padding:9px 2px 7px;min-height:54px;cursor:pointer;display:flex;
@@ -345,10 +345,9 @@ justify-content:center;padding:24px}
   font-weight:600;text-decoration:underline;cursor:pointer;padding:8px 4px}
 @media (display-mode: standalone){
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}
-#app{height:100%;overflow:hidden;padding-bottom:0}
+#app{height:100%;overflow:hidden}
 header.top{position:static}
-main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:20px}
-nav.tabs{position:static}
+main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:14px}
 }
 </style>
 <div id="app">
