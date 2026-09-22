@@ -376,17 +376,14 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="keys" id="keys"></div>
 <input class="note" id="nota" placeholder="¿De qué fue? (Eline, gasolina, la farmacia…)" autocomplete="off" style="margin-top:12px">
 </div>
+<div style="margin-top:14px"><button class="btn" id="saveTop" disabled>Registrar</button></div>
 <div class="panel" style="margin-top:14px" id="selPanel">
 <h2 class="sec" id="selTitulo">¿En qué fue?</h2>
 <p class="hint" id="selHint" hidden></p>
 <div id="grupos"></div>
 </div>
 <div style="margin-top:14px"><button class="btn" id="save" disabled>Registrar</button></div>
-<div class="panel" style="margin-top:16px">
-<h2 class="sec">Lo que llevamos este mes</h2>
-<p class="hint">Toca cualquier renglón para corregirlo o borrarlo.</p>
-<div class="rows" id="recientes"></div>
-</div>
+<p class="foot" id="candadoPie" style="text-align:center;margin-top:18px"></p>
 </section>
 <!-- HOY -->
 <section class="view" id="v-mes" hidden>
@@ -484,35 +481,23 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <p class="hint">Sin fecha fija. Adentro va lo que ya decidimos gastar de cada una.</p></div>
 <div class="stack" id="bolsasLibres"></div>
 </section>
-<!-- AHORROS -->
-<section class="view" id="v-pat" hidden>
-<div class="panel">
-<div class="hero">
-<div class="cap">Todo lo que tenemos</div>
-<div class="big" id="patTotal">$0</div>
-<div class="delta pos" id="patDelta">—</div>
+<!-- REGISTROS -->
+<section class="view" id="v-reg" hidden>
+<div class="panel" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px">
+<button class="navmes" id="regPrev" type="button" aria-label="Mes anterior">‹</button>
+<div style="text-align:center;line-height:1.2">
+<div id="regNombre" style="font-weight:600;font-size:14.5px">—</div>
+<div class="sub" id="regResumen">—</div>
 </div>
-</div>
-<div class="panel">
-<h2 class="sec">Dónde está</h2>
-<div id="patBars"></div>
+<button class="navmes" id="regNext" type="button" aria-label="Mes siguiente">›</button>
 </div>
 <div class="panel">
-<h2 class="sec">Cuánto habrá a los 55</h2>
-<p class="hint">Julio de 2038, si seguimos apartando lo mismo y rinde 7% al año.</p>
-<svg class="chart" id="chRetiro" viewBox="0 0 320 130" role="img" aria-label="Proyección del ahorro para el retiro"></svg>
-<div class="rows" id="retiroResumen"></div>
-</div>
-<div class="panel">
-<h2 class="sec">El bono y el aguinaldo</h2>
-<p class="hint" id="anualIntro">—</p>
-<div class="rows" id="anualRows"></div>
-</div>
-<div class="panel">
-<button class="btn ghost" id="btnSaldos" type="button">Actualizar saldos de Afore y Caja Banamex</button>
-<p class="foot" style="margin-top:8px">Esos dos cambian solos por intereses, así que se capturan a mano cuando llegue el estado de cuenta.</p>
+<h2 class="sec">Todo lo anotado</h2>
+<p class="hint">Toca cualquier renglón para corregirlo o borrarlo.</p>
+<div class="rows" id="regRows"></div>
 </div>
 </section>
+
 <!-- DEUDAS -->
 <section class="view" id="v-ana" hidden>
 <div class="panel">
@@ -543,14 +528,14 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <nav class="tabs" id="nav" role="tablist">
 <button type="button" role="tab" data-v="captura" aria-selected="true">
 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Anotar</button>
+<button type="button" role="tab" data-v="reg" aria-selected="false">
+<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Registros</button>
 <button type="button" role="tab" data-v="mes" aria-selected="false">
 <svg viewBox="0 0 24 24"><path d="M12 20a8 8 0 1 0-8-8M12 8v4l3 2"/></svg>El mes</button>
 <button type="button" role="tab" data-v="fondos" aria-selected="false">
 <svg viewBox="0 0 24 24"><path d="M3 8h18v11H3zM3 8l3-4h12l3 4M9 13h6"/></svg>Bolsas</button>
 <button type="button" role="tab" data-v="ana" aria-selected="false">
 <svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 3 14 2.5-9 1.5 4h5"/></svg>Deudas</button>
-<button type="button" role="tab" data-v="pat" aria-selected="false">
-<svg viewBox="0 0 24 24"><path d="M3 20h18M6 20V10M12 20V4M18 20v-8"/></svg>Patrimonio</button>
 </nav>
 </div>
 <div class="toast" id="toast"></div>
@@ -610,7 +595,8 @@ const TOT_PROV = Object.values(PROV).reduce((a,b)=>a+b,0);
 const TOT_DEUDA = Object.values(DEUDAS).reduce((a,b)=>a+b,0);
 const SOBRANTE = ()=>P.ingresoMes - TOT_CORR() - TOT_PROV - TOT_DEUDA;
 /* ============ CAPTURA ============ */
-const elAmt=document.getElementById('amt'), elSave=document.getElementById('save');
+const elAmt=document.getElementById('amt'), elSave=document.getElementById('save'),
+      elSaveTop=document.getElementById('saveTop');
 function planesAbiertos(){ return (typeof planes!=='undefined'?planes:[]).filter(p=>!p.cerrado); }
 /* si la bolsa trae un solo viaje u obra abierto, el gasto se le pega solo */
 function planDe(key,yaPlan){
@@ -688,6 +674,7 @@ elAmt.classList.toggle('zero',!cap.monto);
 elAmt.classList.toggle('ingreso',cap.modo==='ingreso');
 elSave.textContent = cap.modo==='gasto' ? 'Anotar gasto' : 'Anotar ingreso';
 elSave.disabled=!(parseFloat(cap.monto||'0')>0 && cap.sel);
+if(elSaveTop){ elSaveTop.textContent=elSave.textContent; elSaveTop.disabled=elSave.disabled; }
 }
 document.getElementById('modo').addEventListener('click',e=>{
 const b=e.target.closest('button[data-m]'); if(!b) return;
@@ -733,13 +720,16 @@ document.getElementById('rbCancel').addEventListener('click',cerrarModal);
 document.getElementById('sc3').addEventListener('click',e=>{ if(e.target.id==='sc3') cerrarModal(); });
 document.getElementById('rbNom').focus();
 }
-async function persistir(){
-renderRecientes(); renderRecurrentes(); renderMes(); renderFondos(); renderPat();
+async function persistir(ym){
+ym = ym || ymActual;
+renderRegistros(); renderRecurrentes(); renderMes(); renderFondos();
 if(!db) return;
-try{ await db.doc('movimientos/'+ymActual).set({ym:ymActual,items:movs,ingresos:ingresos}); }
+const it = ym===ymActual ? movs : (cacheMes[ym]||[]);
+const ing = ym===ymActual ? ingresos : [];
+try{ await db.doc('movimientos/'+ym).set({ym:ym,items:it,ingresos:ing}); }
 catch(e){ toast('Guardado aquí; no se pudo sincronizar'); }
 }
-elSave.addEventListener('click',async()=>{
+async function guardarCaptura(){
 const v=Math.round(Number(cap.monto)*100)/100;
 if(cap.modo==='ingreso'){
 const t=TIPOS_ING.find(x=>x.nom===cap.sel);
@@ -753,32 +743,53 @@ nota:document.getElementById('nota').value.trim(),fecha:new Date().toISOString()
 }
 cap.monto=''; cap.sel=null; if(DUENO) cap.persona=DUENO; document.getElementById('nota').value='';
 renderCaptura(); await persistir(); toast((cap.modo==='ingreso'?'Ingreso · ':'Anotado · ')+mxnA(v));
-});
-function renderRecientes(){
-const c=document.getElementById('recientes');
-const todo=[...movs.map(m=>({...m,_t:'g'})),...ingresos.map(i=>({...i,_t:'i'}))]
+}
+elSave.addEventListener('click',guardarCaptura);
+if(elSaveTop) elSaveTop.addEventListener('click',guardarCaptura);
+let regVista=null;
+function renderRecientes(){ renderRegistros(); }
+function renderRegistros(){
+const c=document.getElementById('regRows'); if(!c) return;
+if(!regVista) regVista=ymActual;
+const [ry,rm]=regVista.split('-').map(Number);
+document.getElementById('regNombre').textContent=
+  MESES_L[rm-1].charAt(0).toUpperCase()+MESES_L[rm-1].slice(1)+' '+ry;
+const prev=document.getElementById('regPrev'), next=document.getElementById('regNext');
+prev.disabled = ymSuma(regVista,-1)<YM_MIN; next.disabled = regVista>=ymActual;
+const items=itemsDe(regVista);
+if(items===null){ document.getElementById('regResumen').textContent='cargando…'; c.innerHTML=''; return; }
+const ing = regVista===ymActual ? ingresos : [];
+const todo=[...items.map(m=>({...m,_t:'g'})),...ing.map(i=>({...i,_t:'i'}))]
 .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-if(!todo.length){ c.innerHTML='<p class="sub">Todavía no hay nada anotado este mes.</p>'; return; }
+const g=items.reduce((a,b)=>a+b.monto,0), i2=ing.reduce((a,b)=>a+b.monto,0);
+document.getElementById('regResumen').textContent =
+  todo.length ? (items.length+' movimientos · '+mxn(g)+(i2?' · +'+mxn(i2):'')) : 'sin movimientos';
 c.innerHTML='';
+if(!todo.length){ c.innerHTML='<p class="sub">No hay nada anotado en este mes.</p>'; return; }
 todo.forEach(m=>{
 const d=new Date(m.fecha); const r=document.createElement('div');
 r.className='row tap'; r.tabIndex=0; r.setAttribute('role','button');
 r.innerHTML='<div><div class="nm">'+esc(m._t==='i'?m.nom:(m.etiqueta||m.grupo))+'</div><div class="meta">'+
 esc(m.persona)+' · '+d.getDate()+' '+MESES[d.getMonth()]+(m.nota?' · '+esc(m.nota):'')+'</div></div>'+
 '<div class="v '+(m._t==='i'?'pos':'')+'">'+(m._t==='i'?'+':'')+mxnA(m.monto)+'</div>';
-const open=()=>abrirEditor(m.id,m._t);
+const open=()=>abrirEditor(m.id,m._t,regVista);
 r.addEventListener('click',open);
 r.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();open();} });
 c.appendChild(r);
 });
-const g=movs.reduce((a,b)=>a+b.monto,0), i=ingresos.reduce((a,b)=>a+b.monto,0);
-const t=document.createElement('div'); t.className='row';
-t.innerHTML='<div><div class="nm">Total del mes</div><div class="meta">'+movs.length+' gastos · '+ingresos.length+' ingresos</div></div>'+
-'<div class="v">'+mxn(g)+(i?' <span class="pos">+'+mxn(i)+'</span>':'')+'</div>';
-c.appendChild(t);
 }
-function abrirEditor(id,tipo){
-const arr = tipo==='i'?ingresos:movs, m=arr.find(x=>x.id===id); if(!m) return;
+async function irRegistros(ym){
+if(ym<YM_MIN||ym>ymActual) return;
+regVista=ym; await cargarMes(ym); renderRegistros();
+}
+{const a=document.getElementById('regPrev'), b=document.getElementById('regNext');
+ if(a) a.addEventListener('click',()=>irRegistros(ymSuma(regVista||ymActual,-1)));
+ if(b) b.addEventListener('click',()=>irRegistros(ymSuma(regVista||ymActual,1)));}
+function abrirEditor(id,tipo,ym){
+ym = ym || ymActual;
+const esMesActual = ym===ymActual;
+const arr = tipo==='i' ? ingresos : (esMesActual ? movs : (cacheMes[ym]||[]));
+const m=arr.find(x=>x.id===id); if(!m) return;
 editando=id;
 document.getElementById('modal').innerHTML=
 '<div class="scrim" id="sc1"><div class="sheet" role="dialog" aria-modal="true" aria-label="Editar">'+
@@ -827,11 +838,13 @@ if(it){ m.grupo=it.key; m.etiqueta=it.nom; m.bucket=it.bucket;
 m.proyecto=it.proyecto||null; delete m.rec; }
 }
 if(tipo!=='i') m.plan=ePlan;
-cerrarModal(); await persistir(); toast('Cambio guardado');
+cerrarModal(); await persistir(ym); toast('Cambio guardado');
 });
 document.getElementById('eD').addEventListener('click',async()=>{
-if(tipo==='i') ingresos=ingresos.filter(x=>x.id!==id); else movs=movs.filter(x=>x.id!==id);
-cerrarModal(); await persistir(); toast('Borrado');
+if(tipo==='i') ingresos=ingresos.filter(x=>x.id!==id);
+else if(esMesActual) movs=movs.filter(x=>x.id!==id);
+else cacheMes[ym]=(cacheMes[ym]||[]).filter(x=>x.id!==id);
+cerrarModal(); await persistir(ym); toast('Borrado');
 });
 document.getElementById('eC').addEventListener('click',cerrarModal);
 document.getElementById('sc1').addEventListener('click',e=>{ if(e.target.id==='sc1') cerrarModal(); });
@@ -1647,6 +1660,7 @@ pts.push({y,plan:acum});
 return pts;
 }
 function renderPat(){
+if(!document.getElementById('patTotal')) return;
 const liq=P.fondos.reduce((a,f)=>a+(f.id==='Ahorro'?0:f.saldo),0);
 const ret=P.retiro.plan+saldos.afore+saldos.cajaBanamex;
 document.getElementById('patTotal').textContent=mxn(liq+ret);
@@ -1772,17 +1786,27 @@ if(db){ try{ await db.doc('config/saldos').set({afore:saldos.afore,cajaBanamex:s
 document.getElementById('sX').addEventListener('click',cerrarModal);
 document.getElementById('sc2').addEventListener('click',e=>{ if(e.target.id==='sc2') cerrarModal(); });
 }
-document.getElementById('btnSaldos').addEventListener('click',abrirSaldos);
+{const b=document.getElementById('btnSaldos'); if(b) b.addEventListener('click',abrirSaldos);}
 document.getElementById('mesPrev').addEventListener('click',()=>irAMes(ymSuma(mesVista,-1)));
 document.getElementById('mesNext').addEventListener('click',()=>irAMes(ymSuma(mesVista,1)));
-document.getElementById('nav').addEventListener('click',e=>{
-const b=e.target.closest('button[data-v]'); if(!b) return;
-vista=b.dataset.v;
-[...e.currentTarget.querySelectorAll('button')].forEach(x=>x.setAttribute('aria-selected',String(x===b)));
-['captura','mes','fondos','ana','pat'].forEach(v=>{ document.getElementById('v-'+v).hidden=(v!==vista); });
+const VISTAS=['captura','reg','mes','fondos','ana'];
+const PROTEGIDAS=['reg','mes','fondos','ana'];
+function muestraVista(v){
+vista=v;
+[...document.querySelectorAll('#nav button[data-v]')].forEach(x=>
+  x.setAttribute('aria-selected',String(x.dataset.v===v)));
+VISTAS.forEach(k=>{ const el=document.getElementById('v-'+k); if(el) el.hidden=(k!==v); });
+const sc=document.querySelector('main'); if(sc) sc.scrollTop=0;
 window.scrollTo(0,0);
+if(v==='reg') renderRegistros();
+}
+document.getElementById('nav').addEventListener('click',async e=>{
+const b=e.target.closest('button[data-v]'); if(!b) return;
+const v=b.dataset.v;
+if(PROTEGIDAS.includes(v) && !(await candadoAbierto())) return;
+muestraVista(v);
 });
-renderCaptura(); renderRecientes(); renderRecurrentes(); renderMes(); renderFondos(); renderCal(); renderDeudas(); renderPat();
+renderCaptura(); renderRegistros(); renderRecurrentes(); renderMes(); renderFondos(); renderCal(); renderDeudas();
 /* ===== Base de datos propia (Supabase) =====
 Mantiene la misma forma que usaba la app antes — doc(ruta).get/set/onSnapshot —
 para que el resto del código no cambie. */
@@ -1892,7 +1916,7 @@ db.doc('movimientos/'+ymActual).onSnapshot(s=>{
 if(s.exists){ const d=s.data();
 if(Array.isArray(d.items)) movs=d.items.slice();
 if(Array.isArray(d.ingresos)) ingresos=d.ingresos.slice();
-if(!editando){ renderRecientes(); renderRecurrentes(); renderMes(); renderFondos(); renderDeudas(); renderPat(); } }
+if(!editando){ renderRegistros(); renderRecurrentes(); renderMes(); renderFondos(); renderDeudas(); } }
 },()=>{});
 db.doc('config/montosRec').onSnapshot(s=>{ if(s.exists){ montosRec=Object.assign({},s.data()); renderRecurrentes(); } },()=>{});
 db.doc('config/omisiones').onSnapshot(s=>{ if(s.exists&&Array.isArray(s.data().items)){ omisiones=s.data().items.slice(); renderRecurrentes(); } },()=>{});
@@ -1901,7 +1925,7 @@ db.doc('config/planes').onSnapshot(s=>{ if(s.exists&&Array.isArray(s.data().item
 db.doc('config/rubros').onSnapshot(s=>{ if(s.exists&&Array.isArray(s.data().items)){ rubrosExtra=s.data().items.slice(); renderCaptura(); renderMes(); renderFondos(); renderDeudas(); } },()=>{});
 db.doc('config/saldos').onSnapshot(s=>{ if(s.exists){ const d=s.data();
 if(typeof d.afore==='number') saldos.afore=d.afore;
-if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; renderPat(); } },()=>{});
+if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; } },()=>{});
 }catch(_){}
 })();
 
@@ -1984,4 +2008,70 @@ if(typeof d.cajaBanamex==='number') saldos.cajaBanamex=d.cajaBanamex; renderPat(
     c.appendChild(b);
   });
 })();
+
+/* ===== candado: solo Anotar es libre ===== */
+let pinListo=false;            // abierto durante esta sesión de la app
+let pinHash=null;              // huella del PIN, compartida entre los dos teléfonos
+async function huella(txt){
+  const d=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('nc:'+txt));
+  return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function cargaPin(){
+  try{ const s2=await sbDoc('config/seguridad').get(); if(s2.exists && s2.data().pin) pinHash=s2.data().pin; }
+  catch(e){}
+}
+function hojaPin({titulo,texto,botón,onOk}){
+  return new Promise(resolve=>{
+    const d=document.createElement('div'); d.className='acceso'; d.style.zIndex='92';
+    d.innerHTML='<div class="accbox"><div class="accmarca">'+esc(titulo)+'</div>'+
+      '<p class="sub">'+esc(texto)+'</p>'+
+      '<input class="note" id="pnI" type="password" inputmode="numeric" pattern="[0-9]*" '+
+      'maxlength="4" placeholder="••••" autocomplete="off" style="text-align:center;letter-spacing:10px;font-size:22px">'+
+      '<button class="btn" id="pnB">'+esc(botón)+'</button>'+
+      '<button class="btn ghost" id="pnX">Cancelar</button>'+
+      '<p class="foot" id="pnE" style="min-height:18px"></p></div>';
+    document.body.appendChild(d);
+    const i=d.querySelector('#pnI'), e=d.querySelector('#pnE');
+    const cierra=r=>{ d.remove(); resolve(r); };
+    const intenta=async()=>{
+      const v=(i.value||'').trim();
+      if(!/^\d{4}$/.test(v)){ e.textContent='Son cuatro dígitos.'; return; }
+      const r=await onOk(v,e); if(r) cierra(true);
+    };
+    d.querySelector('#pnB').addEventListener('click',intenta);
+    i.addEventListener('keydown',ev=>{ if(ev.key==='Enter') intenta(); });
+    d.querySelector('#pnX').addEventListener('click',()=>cierra(false));
+    setTimeout(()=>i.focus(),50);
+  });
+}
+async function candadoAbierto(){
+  if(pinListo) return true;
+  if(pinHash===null) await cargaPin();
+  if(!pinHash){
+    // primera vez: se crea
+    let uno=null;
+    const ok=await hojaPin({titulo:'Pon un PIN',
+      texto:'Cuatro dígitos para entrar a los números. Anotar gastos seguirá siendo libre.',
+      botón:'Continuar',
+      onOk:async(v)=>{ uno=v; return true; }});
+    if(!ok) return false;
+    const ok2=await hojaPin({titulo:'Repítelo', texto:'Para no equivocarnos.', botón:'Guardar el PIN',
+      onOk:async(v,e)=>{ if(v!==uno){ e.textContent='No coincide, vuelve a intentar.'; return false; }
+        pinHash=await huella(v);
+        try{ await sbDoc('config/seguridad').set({pin:pinHash}); }catch(err){}
+        return true; }});
+    if(!ok2){ pinHash=null; return false; }
+    pinListo=true; pintaCandado(); toast('PIN guardado');
+    return true;
+  }
+  return await hojaPin({titulo:'Tu PIN', texto:'Para ver los números de la casa.', botón:'Entrar',
+    onOk:async(v,e)=>{ if(await huella(v)!==pinHash){ e.textContent='Ese no es.'; return false; }
+      pinListo=true; pintaCandado(); return true; }});
+}
+function pintaCandado(){
+  const p2=document.getElementById('candadoPie'); if(!p2) return;
+  p2.textContent = pinListo ? 'Los números están abiertos en esta sesión.'
+                            : 'Las demás pestañas piden un PIN.';
+}
+pintaCandado();
 </script>
