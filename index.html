@@ -227,6 +227,22 @@ display:flex;flex-direction:column;gap:12px;margin:auto 0 calc(72px + env(safe-a
 .chart{width:100%;display:block;overflow:visible}
 .dualbar{display:flex;flex-direction:column;gap:6px;margin-top:14px}
 .panel.alarma{border:1.5px solid var(--crit);background:var(--crit-soft)}
+.avisa{margin-top:11px;padding:11px 13px;border-radius:11px;background:var(--warn-soft);
+color:var(--muted);font-size:12.5px;line-height:1.5}
+.avisa b{color:var(--ink);font-weight:600}
+.rub.ido{cursor:default;min-height:46px}
+.rub.ido .rn{color:var(--muted)}
+.rub.ido .tr i{background:var(--ok);opacity:.55}
+.evrow{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:10px;align-items:baseline;
+padding:12px 0;border-bottom:1px solid var(--line)}
+.evrow:last-child{border-bottom:0}
+.evm{font-family:var(--num);font-size:12.5px;color:var(--muted)}
+.evq{display:flex;flex-direction:column;gap:2px;min-width:0}
+.evq span{font-size:14px}
+.evq small{font-size:11.5px;color:var(--faint)}
+.evq small.neg{color:var(--crit)} .evq small.pos{color:var(--ok)}
+.evv{font-family:var(--num);font-size:14px;font-weight:600}
+.evv.neg{color:var(--crit)} .evv.pos{color:var(--ok)}
 .panel.alarma .frase{font-family:var(--se);font-size:21px;font-weight:600;line-height:1.25;margin-top:4px}
 .dualbar .lane{display:grid;grid-template-columns:88px minmax(0,1fr) 88px;gap:8px;align-items:center;font-size:11.5px;color:var(--muted)}
 .dualbar .lane b{text-align:left;white-space:nowrap}
@@ -460,8 +476,7 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <span>· · · así vamos a cerrar</span>
 </div>
 <p class="foot" id="acumPie" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--line)">—</p>
-<button type="button" class="verMovs" id="verBolsas">Ver a dónde van</button>
-<div class="rows" id="bolsasDesglose" hidden></div>
+
 </div>
 <div class="panel" id="alertPanel" hidden>
 <h2 class="sec">Qué se salió del plan</h2>
@@ -472,18 +487,18 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="rows" id="faltaRows"></div>
 </div>
 <div class="panel">
-<h2 class="sec">Los 17 rubros</h2>
-<p class="hint">Ordenados por qué tan cerca van de su tope. Toca cualquiera para ver sus cargos.</p>
+<h2 class="sec">Rubro por rubro</h2>
+<p class="hint">Arriba el día a día, ordenado por qué tan cerca va de su tope. Abajo lo que sale solo cada mes.</p>
 <div id="rubList"></div>
 </div>
 <div class="panel col">
 <button class="colh" type="button" id="hCal" aria-expanded="false" aria-controls="bCal">
-<span class="colt">Lo que viene<small>Qué tiene de distinto cada mes</small></span>
+<span class="colt">El año por delante<small id="calVal">Los recibos grandes que ya sabemos que llegan</small></span>
 <svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
 </button>
 <div class="colb" id="bCal" hidden>
 <div class="cal" id="calList"></div>
-<p class="foot" style="margin-top:10px">La barra es lo que sale de las bolsas ese mes. El gasto del día a día es parejo todos los meses, por eso no aparece aquí.</p>
+<p class="foot" style="margin-top:10px">Cada renglón dice si la bolsa va a alcanzar para ese recibo, contando lo que se le va a apartar de aquí a esa fecha.</p>
 </div>
 </div>
 <div class="panel col" id="cajaPanel">
@@ -502,6 +517,7 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="big" id="bolTotal">$0</div>
 <div class="delta" id="bolDelta">—</div>
 </div>
+<p class="avisa" id="avisoFondeo" hidden></p>
 </div>
 <div class="panel">
 <h2 class="sec">Cómo va cada una</h2>
@@ -574,7 +590,7 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="toast" id="toast"></div>
 <div id="modal"></div>
 <script>
-const CFG = {"corriente": {"Colegiaturas": 36360, "Súper": 17600, "Ayuda doméstica": 16467, "Salud": 12100, "Restaurantes y postres": 11700, "Mantenimientos y servicios": 12700, "Ropa y belleza": 8500, "Coche": 6207, "Farmacia": 4000, "Cosas de casa": 4206, "Deportes y clases": 10000, "Teléfono e internet": 2450, "Cosas personales": 1555, "Salidas": 1300, "Suscripciones": 850, "Otros": 400}, "provisiones": {"Regalos y fiestas": 12341, "Club Sporting": 10040, "Reinscripciones y útiles": 8900, "Reparaciones": 3824, "Caprichos": 1672, "Predial": 755, "Tenencia": 190}, "deudas": {"Hipoteca casa": 24016, "Hipoteca Depto Playa": 18254, "Mantenimiento Fuentes (deuda)": 9200}, "reparto": {"mensual": {"Ahorro": 44015, "Viajes": 13050, "Proyectos": 10022, "Emergencia": 2709}, "anualEstable": {"Ahorro": 90000, "Viajes": 448906, "Proyectos": 254722, "Emergencia": 114904}, "anualAno1": {"Ahorro": 90000, "Viajes": 448906, "Proyectos": 231538, "Emergencia": 0}}, "recurrentes": [{"id": "hipca", "nom": "Hipoteca de la casa", "monto": 24015.98, "dia": 5, "grupo": "Hipoteca casa", "bucket": "DEUDA", "freq": "mensual"}, {"id": "hippl", "nom": "Hipoteca Depto Playa", "monto": 18254.07, "dia": 17, "grupo": "Hipoteca Depto Playa", "bucket": "DEUDA", "freq": "mensual", "nota": "mitad del crédito con mi suegro", "auto": "playa"}, {"id": "fuentes", "nom": "Mantenimiento Fuentes (deuda)", "monto": 9200.29, "dia": 4, "grupo": "Mantenimiento Fuentes (deuda)", "bucket": "DEUDA", "freq": "mensual", "nota": "préstamo de papás"}, {"id": "coleg", "nom": "Colegiatura", "monto": 36360, "dia": 15, "grupo": "Colegiaturas", "bucket": "OPEX", "freq": "mensual", "meses": [1, 2, 3, 4, 5, 6, 9, 10, 11, 12], "nota": "Camila y Julia"}, {"id": "mantma", "nom": "Mantenimiento Mallorca", "monto": 7840.09, "dia": 4, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual"}, {"id": "segauto", "nom": "Seguro del coche", "monto": 1857.5, "dia": 4, "grupo": "Coche", "bucket": "OPEX", "freq": "mensual"}, {"id": "gas", "nom": "Gas", "monto": 1500, "dia": 18, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual"}, {"id": "iphone", "nom": "iPhone for Life", "monto": 829, "dia": 17, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "tel1", "nom": "Telcel · línea 1", "monto": 500, "dia": 14, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "tel2", "nom": "Telcel · línea 2", "monto": 500, "dia": 19, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "telmex", "nom": "Telmex", "monto": 399, "dia": 28, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "claude", "nom": "Claude", "monto": 399, "dia": 7, "grupo": "Suscripciones", "bucket": "OPEX", "freq": "mensual", "verificar": true}, {"id": "vane", "nom": "Ayuda doméstica", "monto": 3800, "diaSem": 5, "grupo": "Ayuda doméstica", "bucket": "OPEX", "freq": "semanal", "nota": "cada viernes"}, {"id": "luz", "nom": "Luz", "monto": 1345, "dia": 24, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual", "variable": true, "nota": "bimestral · el monto cambia", "meses": [2, 4, 6, 8, 10, 12]}, {"id": "agua", "nom": "Agua", "monto": 1556, "dia": 14, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual", "variable": true, "nota": "bimestral · el monto cambia", "meses": [1, 3, 5, 7, 9, 11]}, {"id": "vpn", "nom": "Express VPN", "monto": 2004, "dia": 20, "grupo": "Suscripciones", "bucket": "OPEX", "freq": "mensual", "meses": [2], "nota": "una vez al año"}, {"id": "club", "nom": "Club Sporting", "monto": 30120, "dia": 10, "grupo": "Club Sporting", "bucket": "PROV", "freq": "mensual", "meses": [1, 4, 7, 10], "nota": "recibo trimestral"}, {"id": "predial", "nom": "Predial", "monto": 1620, "dia": 19, "grupo": "Predial", "bucket": "PROV", "freq": "mensual", "meses": [1, 3, 4, 5, 6, 8, 10], "nota": "7 exhibiciones"}, {"id": "abadance", "nom": "Abadance", "monto": 1800, "dia": 10, "grupo": "Deportes y clases", "bucket": "OPEX", "freq": "mensual"}, {"id": "totalpass", "nom": "TotalPass", "monto": 1890, "dia": 18, "grupo": "Deportes y clases", "bucket": "OPEX", "freq": "mensual"}], "catalogo": [{"seccion": "Gasto del mes", "items": [{"nom": "Restaurantes y postres", "key": "Restaurantes y postres", "bucket": "OPEX"}, {"nom": "Coche", "key": "Coche", "bucket": "OPEX"}, {"nom": "Súper", "key": "Súper", "bucket": "OPEX"}, {"nom": "Ropa y belleza", "key": "Ropa y belleza", "bucket": "OPEX"}, {"nom": "Cosas de casa", "key": "Cosas de casa", "bucket": "OPEX"}, {"nom": "Farmacia", "key": "Farmacia", "bucket": "OPEX"}, {"nom": "Ayuda doméstica", "key": "Ayuda doméstica", "bucket": "OPEX"}, {"nom": "Salidas", "key": "Salidas", "bucket": "OPEX"}, {"nom": "Teléfono e internet", "key": "Teléfono e internet", "bucket": "OPEX"}, {"nom": "Deportes y clases", "key": "Deportes y clases", "bucket": "OPEX"}, {"nom": "Salud", "key": "Salud", "bucket": "OPEX"}, {"nom": "Mantenimiento y servicios", "key": "Mantenimientos y servicios", "bucket": "OPEX"}, {"nom": "Personal", "key": "Cosas personales", "bucket": "OPEX"}, {"nom": "Suscripciones", "key": "Suscripciones", "bucket": "OPEX"}, {"nom": "Otros", "key": "Otros", "bucket": "OPEX"}, {"nom": "Colegiaturas", "key": "Colegiaturas", "bucket": "OPEX"}]}, {"seccion": "Bolsas", "items": [{"nom": "Caprichos", "key": "Caprichos", "bucket": "PROV"}, {"nom": "Club Sporting", "key": "Club Sporting", "bucket": "PROV"}, {"nom": "Escuela (reinscripción y útiles)", "key": "Reinscripciones y útiles", "bucket": "PROV"}, {"nom": "Predial", "key": "Predial", "bucket": "PROV"}, {"nom": "Regalos y fiestas", "key": "Regalos y fiestas", "bucket": "PROV"}, {"nom": "Reparaciones", "key": "Reparaciones", "bucket": "PROV"}, {"nom": "Tenencia", "key": "Tenencia", "bucket": "PROV"}, {"nom": "Viaje", "key": "Viajes", "bucket": "VIAJES"}]}, {"seccion": "Bolsa de proyectos", "items": [{"nom": "Expansión de la casa", "key": "Proyectos", "bucket": "CAPITAL", "proyecto": "Expansión de la casa"}, {"nom": "Otro proyecto", "key": "Proyectos", "bucket": "CAPITAL", "proyecto": "Otro"}]}, {"seccion": "Deudas", "items": [{"nom": "Hipoteca casa", "key": "Hipoteca casa", "bucket": "DEUDA"}, {"nom": "Hipoteca Depto Playa", "key": "Hipoteca Depto Playa", "bucket": "DEUDA"}, {"nom": "Mantenimiento Fuentes (deuda)", "key": "Mantenimiento Fuentes (deuda)", "bucket": "DEUDA"}]}], "ingresos": [{"id": "sueldo", "nom": "Mi quincena", "destino": "flujo"}, {"id": "bono", "nom": "Bono o aguinaldo", "destino": "apartados"}, {"id": "ana", "nom": "Ingreso de Ana", "destino": "apartados"}, {"id": "reembolso", "nom": "Reembolso", "destino": "flujo"}, {"id": "otro", "nom": "Otro ingreso", "destino": "apartados"}], "fondos": [{"id": "Ahorro", "nom": "Ahorro", "saldo": 836817, "desc": "Para cuando dejemos de trabajar. Se aparta primero y no se toca antes de tiempo."}, {"id": "Viajes", "nom": "Viajes", "saldo": 1445871, "desc": "Las vacaciones del año. Se junta cada mes y se gasta en julio y enero."}, {"id": "Proyectos", "nom": "Proyectos", "saldo": 883505, "desc": "Obras grandes de la casa y coches. De aquí sale la expansión."}, {"id": "Emergencia", "nom": "Emergencia", "saldo": 723677, "objetivo": 1600000, "desc": "El colchón por si se cae un ingreso. Seis meses de gastos."}], "subtitulos": {"Reparaciones": "lo que se descompone", "Caprichos": "lo que no hace falta pero lo quiero", "Club Sporting": "recibo trimestral", "Regalos y fiestas": "cumpleaños, fiestas y Navidad", "Reinscripciones y útiles": "marzo y el regreso a clases", "Predial": "siete exhibiciones al año", "Tenencia": "una vez al año", "Colchón": "amortigua lo que sobra o falta cada mes", "Viajes": "las vacaciones del año", "Proyectos": "obras grandes de la casa y coches", "Emergencia": "el colchón por si se cae un ingreso"}, "soloFijo": [], "bolsasHist": {"Viajes": {"2022": 244581, "2023": 439950, "2024": 743476, "2025": 551311, "2026": 375931}, "Reparaciones": {"2022": 46129, "2023": 78095, "2024": 40034, "2025": 32139, "2026": 17637}, "Regalos y fiestas": {"2022": 148399, "2023": 166553, "2024": 153939, "2025": 138127, "2026": 47378}, "Reinscripciones y útiles": {"2022": 36325, "2023": 119346, "2024": 144620, "2025": 131728, "2026": 106809}, "Caprichos": {"2022": 28693, "2024": 34932, "2025": 17149, "2026": 8120}, "Tenencia": {"2022": 742, "2023": 787, "2024": 7295, "2025": 1800, "2026": 2200}, "Predial": {"2022": 9857, "2023": 7686, "2024": 6879, "2025": 7511, "2026": 9049}, "Proyectos": {"2022": 887808, "2023": 717839, "2024": 796511, "2025": 1456785, "2026": 10907}, "Club Sporting": {"2022": 36526, "2023": 82122, "2024": 93331, "2025": 105377, "2026": 85762}}, "arranque": "2026-09", "saldoInicial": {"Ahorro": 836817, "Viajes": 1445871, "Proyectos": 883505, "Emergencia": 723677, "Club Sporting": 0, "Reinscripciones y útiles": 0, "Regalos y fiestas": 0, "Reparaciones": 0, "Caprichos": 0, "Predial": 0, "Tenencia": 0, "Colchón": 0}, "pagosBolsa": {"Club Sporting": {"meses": [1, 4, 7, 10], "monto": 30120, "que": "recibo trimestral"}, "Predial": {"meses": [1, 3, 4, 5, 6, 8, 10], "monto": 1620, "que": "exhibición"}, "Reinscripciones y útiles": {"meses": [3], "monto": 87000, "que": "las dos reinscripciones", "extra": {"meses": [6, 8], "monto": 13000, "que": "útiles, uniformes y libros"}}, "Regalos y fiestas": {"meses": [11], "monto": 40465, "que": "Navidad", "extra": {"meses": [12], "monto": 28044, "que": "fin de año"}}, "Tenencia": {"meses": [2], "monto": 2280, "que": "tenencia y placas"}}, "planes": [{"id": "breck27", "nom": "Breckenridge", "cuando": "enero 2027", "mes": "2027-01", "estimado": 180000, "bolsa": "Viajes", "pagado": 0, "nota": "Breckenridge de enero 2025 costó $219,441 con clases de ski. Winter Park de 2026, $93,543 reservando tarde."}, {"id": "expansion", "nom": "Expansión de la casa", "cuando": "este año", "mes": null, "estimado": 564943, "bolsa": "Proyectos", "pagado": 0, "nota": "Estimado a partir del cuarto de las niñas en 2024. Falta la cotización final."}], "traspasos": [{"id": "t1", "de": "Proyectos", "a": "Club Sporting", "monto": 20080, "fecha": "2026-09-20", "nota": "Para cubrir el recibo trimestral de octubre. La bolsa arrancó en cero."}, {"id": "t2", "de": "Viajes", "a": "Reinscripciones y útiles", "monto": 35000, "fecha": "2026-09-23", "nota": "La bolsa arrancó en cero y la reinscripción de marzo cae antes de que se llene."}], "topeColchon": 50000};
+const CFG = {"corriente": {"Colegiaturas": 36360, "Súper": 17600, "Ayuda doméstica": 16467, "Salud": 12500, "Restaurantes y postres": 11700, "Mantenimientos y servicios": 12700, "Ropa y belleza": 8500, "Coche": 6207, "Farmacia": 4000, "Cosas de casa": 4206, "Deportes y clases": 10000, "Teléfono e internet": 2450, "Cosas personales": 1555, "Salidas": 1300, "Suscripciones": 850}, "provisiones": {"Regalos y fiestas": 12341, "Club Sporting": 10040, "Reinscripciones y útiles": 8900, "Reparaciones": 3824, "Caprichos": 1672, "Predial": 945, "Tenencia": 190}, "deudas": {"Hipoteca casa": 24016, "Hipoteca Depto Playa": 18254, "Mantenimiento Fuentes (deuda)": 9200}, "reparto": {"mensual": {"Ahorro": 56556, "Viajes": 13050, "Proyectos": 0, "Emergencia": 0}, "anualEstable": {"Ahorro": 432044, "Viajes": 338400, "Proyectos": 0, "Emergencia": 0}, "anualAno1": {"Ahorro": 432044, "Viajes": 338400, "Proyectos": 0, "Emergencia": 0}}, "recurrentes": [{"id": "hipca", "nom": "Hipoteca de la casa", "monto": 24015.98, "dia": 5, "grupo": "Hipoteca casa", "bucket": "DEUDA", "freq": "mensual"}, {"id": "hippl", "nom": "Hipoteca Depto Playa", "monto": 18254.07, "dia": 17, "grupo": "Hipoteca Depto Playa", "bucket": "DEUDA", "freq": "mensual", "nota": "mitad del crédito con mi suegro", "auto": "playa"}, {"id": "fuentes", "nom": "Mantenimiento Fuentes (deuda)", "monto": 9200.29, "dia": 4, "grupo": "Mantenimiento Fuentes (deuda)", "bucket": "DEUDA", "freq": "mensual", "nota": "préstamo de papás"}, {"id": "coleg", "nom": "Colegiatura", "monto": 36360, "dia": 15, "grupo": "Colegiaturas", "bucket": "OPEX", "freq": "mensual", "meses": [1, 2, 3, 4, 5, 6, 9, 10, 11, 12], "nota": "Camila y Julia"}, {"id": "mantma", "nom": "Mantenimiento Mallorca", "monto": 7840.09, "dia": 4, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual"}, {"id": "segauto", "nom": "Seguro del coche", "monto": 1857.5, "dia": 4, "grupo": "Coche", "bucket": "OPEX", "freq": "mensual"}, {"id": "gas", "nom": "Gas", "monto": 1500, "dia": 18, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual"}, {"id": "iphone", "nom": "iPhone for Life", "monto": 829, "dia": 17, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "tel1", "nom": "Telcel · línea 1", "monto": 500, "dia": 14, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "tel2", "nom": "Telcel · línea 2", "monto": 500, "dia": 19, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "telmex", "nom": "Telmex", "monto": 399, "dia": 28, "grupo": "Teléfono e internet", "bucket": "OPEX", "freq": "mensual"}, {"id": "claude", "nom": "Claude", "monto": 399, "dia": 7, "grupo": "Suscripciones", "bucket": "OPEX", "freq": "mensual", "verificar": true}, {"id": "vane", "nom": "Ayuda doméstica", "monto": 3800, "diaSem": 5, "grupo": "Ayuda doméstica", "bucket": "OPEX", "freq": "semanal", "nota": "cada viernes"}, {"id": "luz", "nom": "Luz", "monto": 1345, "dia": 24, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual", "variable": true, "nota": "bimestral · el monto cambia", "meses": [2, 4, 6, 8, 10, 12]}, {"id": "agua", "nom": "Agua", "monto": 1556, "dia": 14, "grupo": "Mantenimientos y servicios", "bucket": "OPEX", "freq": "mensual", "variable": true, "nota": "bimestral · el monto cambia", "meses": [1, 3, 5, 7, 9, 11]}, {"id": "vpn", "nom": "Express VPN", "monto": 2004, "dia": 20, "grupo": "Suscripciones", "bucket": "OPEX", "freq": "mensual", "meses": [2], "nota": "una vez al año"}, {"id": "club", "nom": "Club Sporting", "monto": 30120, "dia": 10, "grupo": "Club Sporting", "bucket": "PROV", "freq": "mensual", "meses": [1, 4, 7, 10], "nota": "recibo trimestral"}, {"id": "predial", "nom": "Predial", "monto": 1620, "dia": 19, "grupo": "Predial", "bucket": "PROV", "freq": "mensual", "meses": [1, 3, 4, 5, 6, 8, 10], "nota": "7 exhibiciones"}, {"id": "abadance", "nom": "Abadance", "monto": 1800, "dia": 10, "grupo": "Deportes y clases", "bucket": "OPEX", "freq": "mensual"}, {"id": "totalpass", "nom": "TotalPass", "monto": 1890, "dia": 18, "grupo": "Deportes y clases", "bucket": "OPEX", "freq": "mensual"}], "catalogo": [{"seccion": "Gasto del mes", "items": [{"nom": "Restaurantes y postres", "key": "Restaurantes y postres", "bucket": "OPEX"}, {"nom": "Coche", "key": "Coche", "bucket": "OPEX"}, {"nom": "Súper", "key": "Súper", "bucket": "OPEX"}, {"nom": "Ropa y belleza", "key": "Ropa y belleza", "bucket": "OPEX"}, {"nom": "Cosas de casa", "key": "Cosas de casa", "bucket": "OPEX"}, {"nom": "Farmacia", "key": "Farmacia", "bucket": "OPEX"}, {"nom": "Ayuda doméstica", "key": "Ayuda doméstica", "bucket": "OPEX"}, {"nom": "Salidas", "key": "Salidas", "bucket": "OPEX"}, {"nom": "Teléfono e internet", "key": "Teléfono e internet", "bucket": "OPEX"}, {"nom": "Deportes y clases", "key": "Deportes y clases", "bucket": "OPEX"}, {"nom": "Salud", "key": "Salud", "bucket": "OPEX"}, {"nom": "Mantenimiento y servicios", "key": "Mantenimientos y servicios", "bucket": "OPEX"}, {"nom": "Personal", "key": "Cosas personales", "bucket": "OPEX"}, {"nom": "Suscripciones", "key": "Suscripciones", "bucket": "OPEX"}, {"nom": "Colegiaturas", "key": "Colegiaturas", "bucket": "OPEX"}]}, {"seccion": "Bolsas", "items": [{"nom": "Caprichos", "key": "Caprichos", "bucket": "PROV"}, {"nom": "Club Sporting", "key": "Club Sporting", "bucket": "PROV"}, {"nom": "Escuela (reinscripción y útiles)", "key": "Reinscripciones y útiles", "bucket": "PROV"}, {"nom": "Predial", "key": "Predial", "bucket": "PROV"}, {"nom": "Regalos y fiestas", "key": "Regalos y fiestas", "bucket": "PROV"}, {"nom": "Reparaciones", "key": "Reparaciones", "bucket": "PROV"}, {"nom": "Tenencia", "key": "Tenencia", "bucket": "PROV"}, {"nom": "Viaje", "key": "Viajes", "bucket": "VIAJES"}]}, {"seccion": "Bolsa de proyectos", "items": [{"nom": "Expansión de la casa", "key": "Proyectos", "bucket": "CAPITAL", "proyecto": "Expansión de la casa"}, {"nom": "Otro proyecto", "key": "Proyectos", "bucket": "CAPITAL", "proyecto": "Otro"}]}, {"seccion": "Deudas", "items": [{"nom": "Hipoteca casa", "key": "Hipoteca casa", "bucket": "DEUDA"}, {"nom": "Hipoteca Depto Playa", "key": "Hipoteca Depto Playa", "bucket": "DEUDA"}, {"nom": "Mantenimiento Fuentes (deuda)", "key": "Mantenimiento Fuentes (deuda)", "bucket": "DEUDA"}]}], "ingresos": [{"id": "sueldo", "nom": "Mi quincena", "destino": "flujo"}, {"id": "bono", "nom": "Bono o aguinaldo", "destino": "apartados"}, {"id": "ana", "nom": "Ingreso de Ana", "destino": "apartados"}, {"id": "reembolso", "nom": "Reembolso", "destino": "flujo"}, {"id": "otro", "nom": "Otro ingreso", "destino": "apartados"}], "fondos": [{"id": "Ahorro", "nom": "Ahorro", "saldo": 836817, "desc": "Para cuando dejemos de trabajar. Se aparta primero y no se toca antes de tiempo."}, {"id": "Viajes", "nom": "Viajes", "saldo": 1445871, "desc": "El presupuesto de vacaciones del año"}, {"id": "Proyectos", "nom": "Proyectos", "saldo": 883505, "desc": "Obras grandes de la casa y coches. De aquí sale la expansión."}, {"id": "Emergencia", "nom": "Emergencia", "saldo": 723677, "objetivo": 1600000, "desc": "El colchón por si se cae un ingreso. Seis meses de gastos."}], "subtitulos": {"Reparaciones": "lo que se descompone", "Caprichos": "lo que no hace falta pero lo quiero", "Club Sporting": "recibo trimestral", "Regalos y fiestas": "cumpleaños, fiestas y Navidad", "Reinscripciones y útiles": "marzo y el regreso a clases", "Predial": "siete exhibiciones al año", "Tenencia": "una vez al año", "Colchón": "amortigua lo que sobra o falta cada mes", "Viajes": "el presupuesto de vacaciones del año", "Proyectos": "reservado para la expansión de la casa", "Emergencia": "meta cumplida · seis meses de gastos"}, "soloFijo": [], "bolsasHist": {"Viajes": {"2022": 244581, "2023": 439950, "2024": 743476, "2025": 551311, "2026": 375931}, "Reparaciones": {"2022": 46129, "2023": 78095, "2024": 40034, "2025": 32139, "2026": 17637}, "Regalos y fiestas": {"2022": 148399, "2023": 166553, "2024": 153939, "2025": 138127, "2026": 47378}, "Reinscripciones y útiles": {"2022": 36325, "2023": 119346, "2024": 144620, "2025": 131728, "2026": 106809}, "Caprichos": {"2022": 28693, "2024": 34932, "2025": 17149, "2026": 8120}, "Tenencia": {"2022": 742, "2023": 787, "2024": 7295, "2025": 1800, "2026": 2200}, "Predial": {"2022": 9857, "2023": 7686, "2024": 6879, "2025": 7511, "2026": 9049}, "Proyectos": {"2022": 887808, "2023": 717839, "2024": 796511, "2025": 1456785, "2026": 10907}, "Club Sporting": {"2022": 36526, "2023": 82122, "2024": 93331, "2025": 105377, "2026": 85762}}, "arranque": "2026-09", "saldoInicial": {"Ahorro": 836817, "Viajes": 1445871, "Proyectos": 883505, "Emergencia": 723677, "Club Sporting": 0, "Reinscripciones y útiles": 0, "Regalos y fiestas": 0, "Reparaciones": 0, "Caprichos": 0, "Predial": 0, "Tenencia": 0, "Colchón": 0}, "pagosBolsa": {"Club Sporting": {"meses": [1, 4, 7, 10], "monto": 30120, "que": "recibo trimestral"}, "Predial": {"meses": [1, 3, 4, 5, 6, 8, 10], "monto": 1620, "que": "exhibición"}, "Reinscripciones y útiles": {"meses": [3], "monto": 87000, "que": "las dos reinscripciones", "extra": {"meses": [6, 8], "monto": 13000, "que": "útiles, uniformes y libros"}}, "Regalos y fiestas": {"meses": [11], "monto": 40465, "que": "Navidad", "extra": {"meses": [12], "monto": 28044, "que": "fin de año"}}, "Tenencia": {"meses": [2], "monto": 2280, "que": "tenencia y placas"}}, "planes": [{"id": "breck27", "nom": "Breckenridge", "cuando": "enero 2027", "mes": "2027-01", "estimado": 180000, "bolsa": "Viajes", "pagado": 0, "nota": "Breckenridge de enero 2025 costó $219,441 con clases de ski. Winter Park de 2026, $93,543 reservando tarde."}, {"id": "expansion", "nom": "Expansión de la casa", "cuando": "este año", "mes": null, "estimado": 564943, "bolsa": "Proyectos", "pagado": 0, "nota": "Estimado a partir del cuarto de las niñas en 2024. Falta la cotización final."}], "traspasos": [{"id": "t1", "de": "Proyectos", "a": "Club Sporting", "monto": 20080, "fecha": "2026-09-20", "nota": "Para cubrir el recibo trimestral de octubre. La bolsa arrancó en cero."}, {"id": "t2", "de": "Viajes", "a": "Reinscripciones y útiles", "monto": 35000, "fecha": "2026-09-23", "nota": "La bolsa arrancó en cero y la reinscripción de marzo cae antes de que se llene."}, {"id": "t3", "de": "Viajes", "a": "Regalos y fiestas", "monto": 15703, "fecha": "2026-09-24", "nota": "Navidad y fin de año caen seguidos y la bolsa arrancó en cero."}, {"id": "t4", "de": "Viajes", "a": "Emergencia", "monto": 876323, "fecha": "2026-09-24", "nota": "Viajes tenía casi tres años de presupuesto guardado. Con esto la meta de Emergencia queda completa."}, {"id": "t5", "de": "Viajes", "a": "Ahorro", "monto": 36895, "fecha": "2026-09-24", "nota": "El resto del excedente de Viajes."}, {"id": "t6", "de": "Proyectos", "a": "Ahorro", "monto": 297342, "fecha": "2026-09-24", "nota": "Proyectos se queda con lo justo para la expansión."}], "topeColchon": 50000, "presupuestoAnual": {"Viajes": 495000}, "gastoAnualPrevio": {"2026": {"Viajes": 303896}}, "notaBono": "El bono no financia el mes: el sueldo paga todo. Cuando entra, se reparte a mano."};
 const HIST = {"meses":["2024-09","2024-10","2024-11","2024-12","2025-01","2025-02","2025-03","2025-04","2025-05","2025-06","2025-07","2025-08","2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"],"opex_mensual":{"2024-09":205392,"2024-10":255004,"2024-11":258056,"2024-12":243998,"2025-01":256684,"2025-02":259405,"2025-03":306198,"2025-04":216256,"2025-05":229522,"2025-06":212305,"2025-07":246143,"2025-08":170639,"2025-09":236869,"2025-10":191044,"2025-11":280496,"2025-12":246921,"2026-01":243841,"2026-02":236830,"2026-03":263308,"2026-04":221258,"2026-05":263057,"2026-06":274345,"2026-07":238148,"2026-08":207672},"estacionalidad":{"9":{"Restaurantes y antojos":14194,"Salidas":632,"Coche":9288,"Súper":20498,"Mantenimiento y servicios":9150,"Cosas de casa":6422,"Regalos y fiestas":10458,"Farmacia":4696,"Suscripciones y celulares":3317,"Ropa y belleza":8105,"Viajes":40189,"Ayuda doméstica":13800,"Médicos":8034,"Gimnasio y club":13215,"Otros":858,"Personal":2466,"Colegiaturas":30570,"Hipoteca casa":23903,"Clases y útiles":1336},"10":{"Farmacia":4690,"Cosas de casa":10395,"Salidas":703,"Restaurantes y antojos":13054,"Médicos":16584,"Regalos y fiestas":8313,"Suscripciones y celulares":2997,"Viajes":23184,"Súper":18190,"Coche":7328,"Ropa y belleza":4176,"Personal":363,"Ayuda doméstica":13800,"Mantenimiento y servicios":10329,"Colegiaturas":43070,"Hipoteca casa":23903,"Gimnasio y club":11252,"Otros":2132,"Clases y útiles":3626,"Depto Playa":4936},"11":{"Regalos y fiestas":35966,"Clases y útiles":3872,"Ayuda doméstica":14100,"Restaurantes y antojos":12436,"Farmacia":8738,"Médicos":9530,"Ropa y belleza":9176,"Cosas de casa":18129,"Suscripciones y celulares":2997,"Coche":5996,"Personal":5066,"Súper":18576,"Hipoteca casa":23903,"Salidas":1204,"Colegiaturas":30570,"Mantenimiento y servicios":8350,"Gimnasio y club":11102,"Viajes":40332,"Depto Playa":9232},"12":{"Regalos y fiestas":30018,"Farmacia":5344,"Cosas de casa":6665,"Restaurantes y antojos":10690,"Súper":22798,"Ropa y belleza":12366,"Ayuda doméstica":19050,"Suscripciones y celulares":3002,"Personal":5996,"Mantenimiento y servicios":11733,"Médicos":15380,"Salidas":714,"Coche":5716,"Clases y útiles":1211,"Hipoteca casa":23903,"Colegiaturas":30570,"Gimnasio y club":11485,"Viajes":19668,"Depto Playa":9149},"1":{"Coche":7597,"Ayuda doméstica":15150,"Restaurantes y antojos":7476,"Súper":17588,"Ropa y belleza":7944,"Médicos":12420,"Farmacia":8266,"Suscripciones y celulares":4002,"Mantenimiento y servicios":11087,"Salidas":1415,"Cosas de casa":5416,"Personal":2500,"Otros":201,"Viajes":62521,"Regalos y fiestas":8394,"Gimnasio y club":12465,"Colegiaturas":30570,"Hipoteca casa":23903,"Clases y útiles":2198,"Depto Playa":9149},"2":{"Viajes":60699,"Ropa y belleza":12238,"Suscripciones y celulares":3259,"Regalos y fiestas":9894,"Salidas":3904,"Ayuda doméstica":14600,"Restaurantes y antojos":9909,"Coche":8098,"Personal":5591,"Farmacia":3417,"Médicos":12008,"Súper":13639,"Mantenimiento y servicios":8542,"Clases y útiles":2655,"Hipoteca casa":23903,"Cosas de casa":3675,"Colegiaturas":30570,"Gimnasio y club":12266,"Otros":100,"Depto Playa":9149},"3":{"Ropa y belleza":7918,"Coche":7164,"Viajes":25981,"Súper":23149,"Restaurantes y antojos":11091,"Suscripciones y celulares":3017,"Ayuda doméstica":16300,"Personal":5676,"Reinscripciones":77674,"Regalos y fiestas":7352,"Clases y útiles":2527,"Salidas":815,"Médicos":8810,"Farmacia":5778,"Mantenimiento y servicios":13408,"Hipoteca casa":11951,"Cosas de casa":4164,"Colegiaturas":30570,"Gimnasio y club":12266,"Depto Playa":9142},"4":{"Restaurantes y antojos":13166,"Coche":7985,"Cosas de casa":9558,"Súper":14948,"Farmacia":8879,"Médicos":7424,"Ropa y belleza":8088,"Mantenimiento y servicios":8636,"Suscripciones y celulares":3017,"Salidas":3392,"Personal":1096,"Ayuda doméstica":14350,"Regalos y fiestas":4792,"Viajes":28259,"Hipoteca casa":28228,"Colegiaturas":30570,"Gimnasio y club":15521,"Clases y útiles":1698,"Depto Playa":9149},"5":{"Reinscripciones":12825,"Restaurantes y antojos":11550,"Farmacia":6306,"Coche":6494,"Ropa y belleza":8549,"Ayuda doméstica":17000,"Médicos":14164,"Suscripciones y celulares":3037,"Súper":19170,"Salidas":1723,"Gimnasio y club":13165,"Regalos y fiestas":8860,"Cosas de casa":4468,"Viajes":42932,"Mantenimiento y servicios":9715,"Hipoteca casa":23903,"Colegiaturas":30570,"Clases y útiles":2033,"Personal":687,"Depto Playa":9138},"6":{"Coche":5617,"Restaurantes y antojos":12744,"Mantenimiento y servicios":9582,"Viajes":30322,"Súper":20424,"Cosas de casa":4802,"Médicos":7750,"Salidas":4870,"Farmacia":4813,"Regalos y fiestas":9484,"Suscripciones y celulares":3042,"Ayuda doméstica":14050,"Personal":682,"Clases y útiles":7672,"Ropa y belleza":13162,"Hipoteca casa":23966,"Colegiaturas":30570,"Gimnasio y club":12966,"Reinscripciones":17486,"Depto Playa":9149,"Otros":172},"7":{"Ayuda doméstica":16750,"Restaurantes y antojos":6176,"Viajes":110311,"Médicos":16754,"Coche":7496,"Suscripciones y celulares":3062,"Súper":12067,"Mantenimiento y servicios":10678,"Salidas":1910,"Personal":1268,"Farmacia":3050,"Cosas de casa":2276,"Gimnasio y club":12450,"Otros":824,"Hipoteca casa":23903,"Clases y útiles":2380,"Regalos y fiestas":706,"Ropa y belleza":950,"Depto Playa":9134},"8":{"Súper":23284,"Ropa y belleza":17698,"Restaurantes y antojos":15183,"Cosas de casa":3724,"Farmacia":4398,"Salidas":4194,"Suscripciones y celulares":2918,"Regalos y fiestas":2496,"Ayuda doméstica":9900,"Mantenimiento y servicios":12577,"Personal":1573,"Coche":8038,"Médicos":20290,"Clases y útiles":13466,"Hipoteca casa":23903,"Gimnasio y club":15227,"Depto Playa":9134,"Otros":132,"Viajes":1021}},"rubroMensual":{"Ayuda doméstica":[14000,14000,11200,18200,14200,19000,15200,15200,19000,15200,19000,11400],"Coche":[6226,7776,5901,6245,4599,11017,7418,9428,4641,7459,5590,9798],"Colegiaturas":[32440,32440,32440,32440,32440,32440,32440,32440,32440,32440,0,0],"Cosas de casa":[2909,7528,12287,2525,3981,2690,7127,3982,4939,3854,3743,4216],"Cosas personales":[4383,20,1630,469,2782,1000,595,1046,1168,872,1551,2401],"Deportes y clases":[899,4010,5800,1800,3660,1800,4400,3150,3292,14343,2580,10813],"Farmacia":[3611,5642,733,4059,2158,1763,6564,3664,4753,4392,3055,2683],"Gimnasio":[4056,2256,2256,2256,5361,5361,5361,9024,5361,5361,5361,10914],"Mantenimientos y servicios":[10356,11582,7758,9484,11433,5370,11168,9960,12316,9340,12177,11305],"Otros":[1324,1363,0,0,0,200,0,0,0,345,947,263],"Restaurantes y postres":[16053,17615,9561,13415,6251,9267,9411,14074,14387,11591,4862,14640],"Ropa y belleza":[1712,3922,8920,9379,9475,7841,6824,7682,6278,20993,1009,11482],"Salidas":[755,483,1704,1261,0,2317,1368,1230,1895,2313,2117,4483],"Salud":[8769,14559,8009,12300,10941,8000,7000,4800,19727,11300,0,22181],"Suscripciones":[1278,639,639,648,648,648,648,648,648,648,648,399],"Súper":[16722,18254,15276,19846,19560,12562,19076,15738,21574,20851,7663,23486],"Teléfono e internet":[2419,2419,2419,2419,2419,2419,2419,2419,2459,2419,2419,2619]},"meses12":["2025-09","2025-10","2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"],"bolsasMensual":[173857,145054,340979,69919,71732,70933,108006,35921,76908,68297,123255,22419],"stats":{"Ayuda doméstica":{"txMed":2500.0,"txP90":3800.0,"txMes":6.1,"mesMed":14750.0},"Coche":{"txMed":145.0,"txP90":1514.92,"txMes":13.7,"mesMed":6235.0},"Colegiaturas":{"txMed":28700.0,"txP90":32440.0,"txMes":0.9,"mesMed":28700.0},"Cosas de casa":{"txMed":500.0,"txP90":2035.2,"txMes":5.6,"mesMed":3982.0},"Cosas personales":{"txMed":289.0,"txP90":953.04,"txMes":3.1,"mesMed":1074.0},"Deportes y clases":{"txMed":1800.0,"txP90":2869.8,"txMes":1.6,"mesMed":1800.0},"Farmacia":{"txMed":669.0,"txP90":1594.8,"txMes":6.6,"mesMed":4873.0},"Gimnasio":{"txMed":2256.0,"txP90":5361.0,"txMes":1.3,"mesMed":3936.0},"Mantenimientos y servicios":{"txMed":1500.0,"txP90":7840.09,"txMes":3.2,"mesMed":9722.0},"Otros":{"txMed":263.0,"txP90":528.0,"txMes":0.9,"mesMed":0.0},"Restaurantes y postres":{"txMed":259.0,"txP90":744.7,"txMes":30.5,"mesMed":11924.0},"Ropa y belleza":{"txMed":681.0,"txP90":3089.8,"txMes":7.5,"mesMed":8706.0},"Salidas":{"txMed":200.0,"txP90":836.0,"txMes":5.0,"mesMed":1627.0},"Salud":{"txMed":2100.0,"txP90":4899.2,"txMes":4.6,"mesMed":10996.0},"Suscripciones":{"txMed":299.0,"txP90":399.0,"txMes":2.1,"mesMed":639.0},"Súper":{"txMed":1082.0,"txP90":3576.0,"txMes":11.8,"mesMed":18665.0},"Teléfono e internet":{"txMed":500.0,"txP90":1019.88,"txMes":4.1,"mesMed":2419.0},"_curva":[0.0303,0.0571,0.0896,0.1161,0.1416,0.1879,0.21,0.2426,0.2751,0.3154,0.3713,0.4589,0.5287,0.6106,0.6145,0.6648,0.6869,0.7176,0.7268,0.7641,0.7865,0.8036,0.8221,0.8451,0.8669,0.884,0.9117,0.9376,0.9708,0.9955,1.0]}};
 const P = {
 ingresoMes: 305383,
@@ -1114,6 +1130,14 @@ return {pm,pres,gastado,proy:gastado+pendFijos+variableRest,pendFijos,variableRe
 anotados:corr.length,pendList:pend};
 }
 function semaforo(p){ const r=p.proy/p.pres; return r<=1?'ok':(r<=1.1?'wa':'cr'); }
+/* todo lo que sale de la quincena este mes, no sólo el día a día */
+function totalesMes(p){
+const base=BOLSAS_MES(), deu=deudasPorDia(mesVista).reduce((a,b)=>a+b,0);
+return {base, deu, fijo:base+deu,
+        pres:p.pres+base+deu,
+        proy:(p.cerrado?p.gastado:p.proy)+base+deu,
+        gastado:p.gastado+base+deu};
+}
 const ICO={ok:'<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
 wa:'<svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
 cr:'<svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>'};
@@ -1132,9 +1156,9 @@ let chip=hero.querySelector('.estado');
 if(!chip){ chip=document.createElement('span'); chip.className='estado'; hero.insertBefore(chip,hero.firstChild); }
 chip.className='estado '+est; chip.innerHTML=ICO[est]+TXT[est];
 hero.querySelector('.cap').textContent = p.cerrado?'Se gastó en el mes':'Así vamos a cerrar el mes';
-const dif=p.pres-p.proy;
+const T=totalesMes(p), dif=T.pres-T.proy;
 document.getElementById('proyTotal').innerHTML = (p.cerrado?'Cerramos en <b>':'Vamos a cerrar en <b>')+
-mxn(p.proy)+'</b> de '+mxn(p.pres)+' presupuestados.';
+mxn(T.proy)+'</b> de '+mxn(T.pres)+' presupuestados.';
 document.getElementById('proyDelta').innerHTML = p.cerrado
 ? (dif>=0?'Nos sobraron <b>'+mxn(dif)+'</b> del gasto del mes.':'Nos pasamos por <b>'+mxn(-dif)+'</b>.')
 : (dif>=0?'Cabría con <b>'+mxn(dif)+'</b> de margen.'
@@ -1142,15 +1166,19 @@ document.getElementById('proyDelta').innerHTML = p.cerrado
 document.getElementById('proyDelta').className='delta';
 // dos barras: avance del mes vs avance del gasto
 /* dónde va un mes típico a esta altura, no los días transcurridos */
-const pNor=p.cerrado?1:pctCurva(p.dia,mesVista), pGas=Math.min(1.4,p.gastado/p.pres);
-const clsG = pGas/pNor>1.15?'cr':(pGas/pNor>1.03?'wa':'');
+const deuHoy=deudasPorDia(mesVista).slice(0,p.dia+1).reduce((a,b)=>a+b,0);
+const fijoHoy=T.base+deuHoy;
+const pNor=p.cerrado?1:(fijoHoy+p.pres*pctCurva(p.dia,mesVista))/T.pres;
+const pGas=Math.min(1.4,(p.gastado+fijoHoy)/T.pres);
+/* el aviso sigue mirando el día a día, que es donde se puede corregir */
+const rCorr=p.pres? p.gastado/(p.pres*(p.cerrado?1:pctCurva(p.dia,mesVista))) : 1;
+const clsG = rCorr>1.15?'cr':(rCorr>1.03?'wa':'');
 document.getElementById('dualbar').innerHTML=
 '<div class="lane"><span>Un mes normal</span><span class="tr"><i style="width:'+Math.min(100,pNor*100).toFixed(0)+'%"></i></span><b>'+Math.round(pNor*100)+'% · día '+p.dia+'</b></div>'+
 '<div class="lane"><span>Lo que llevas</span><span class="tr"><i class="gasto '+clsG+'" style="width:'+Math.min(100,pGas*100).toFixed(0)+'%"></i></span><b>'+Math.round(pGas*100)+'%</b></div>';
 document.getElementById('proyNota').textContent = p.cerrado ? ''
-: 'Llevas '+mxn(p.gastado)+' anotados · faltan '+mxn(p.pendFijos)+' de pagos fijos · '+
-mxn(p.variableRest)+' estimados de gasto diario. Con '+p.anotados+' movimientos anotados este mes.';
-renderDondeSalen(p);
+: 'Del día a día llevas '+mxn(p.gastado)+' de '+mxn(p.pres)+' · faltan '+mxn(p.pendFijos)+' de pagos fijos · '+
+mxn(p.variableRest)+' estimados de aquí al cierre.';
 renderCaja(p);
 chartAcumulado(p);
 pintaRetiro(p);
@@ -1190,43 +1218,6 @@ if(cand.length) return cand.sort((a,b)=>(a.saldo/a.objetivo)-(b.saldo/b.objetivo
 return 'Proyectos';
 }
 let bolsasAbierto=false;
-function renderDondeSalen(p){
-const c=document.getElementById('bolsasDesglose'); if(!c) return;
-const bt=document.getElementById('verBolsas');
-c.hidden=!bolsasAbierto;
-if(bt){ bt.textContent = bolsasAbierto ? 'Ocultar' : 'Ver a dónde van';
-  if(!bt._li){ bt._li=1; bt.addEventListener('click',()=>{ bolsasAbierto=!bolsasAbierto; renderMes(); }); } }
-if(!bolsasAbierto){ c.innerHTML=''; return; }
-c.innerHTML='';
-const grandes=['Ahorro','Viajes','Proyectos','Emergencia'].map(k=>[k,mxnA(REP_MES[k]||0)]);
-const chicas=Object.keys(PROV).sort((a,b)=>PROV[b]-PROV[a]).map(k=>[k,mxnA(PROV[k])]);
-const bolsas=TOT_PROV+['Ahorro','Viajes','Proyectos','Emergencia'].reduce((a,k)=>a+(REP_MES[k]||0),0);
-const deudaHijos=Object.keys(DEUDAS).map(k=>[k,mxnA(DEUDAS[k])]);
-filaExp(c,{id:'bolg',nom:'Se gastan después',sub:'Las bolsas del año, viajes y proyectos · toca para el detalle',
-monto:'−'+mxn(BOLSAS_MES()),hijos:chicas.concat([['Viajes',mxnA(REP_MES['Viajes']||0)],['Proyectos',mxnA(REP_MES['Proyectos']||0)]])});
-filaExp(c,{id:'deu',nom:'Se van a deudas',sub:'Las tres, con fecha de término',monto:'−'+mxn(TOT_DEUDA),hijos:deudaHijos});
-const a=ahorroDelMes(p);
-const hijosA=[['Ahorro',mxnA(REP_MES['Ahorro']||0)],['Emergencia',mxnA(REP_MES['Emergencia']||0)]];
-if(a.derrame>0) hijosA.push(['Extra: el Colchón ya está lleno','+'+mxnA(a.derrame)]);
-if(a.falta>0) hijosA.push(['Menos: el Colchón no alcanzó','−'+mxnA(a.falta)]);
-filaExp(c,{id:'aho',nom:'Se quedan al ahorro',
-sub:a.falta>0?'El Colchón no alcanzó y le pegó al ahorro':(a.derrame>0?'Con el extra de un mes bueno':'Retiro y emergencia'),
-monto:(a.ahorro<0?'−':'')+mxn(Math.abs(a.ahorro)),cls:a.ahorro<a.comprometido?'neg':'pos',hijos:hijosA});
-const r=document.createElement('div'); r.className='row';
-r.innerHTML='<div><div class="nm">Queda para el gasto del mes</div><div class="meta">El día a día, lo que mide la línea verde</div></div>'+
-'<div class="v" style="font-weight:700">'+mxn(p.pres)+'</div>';
-c.appendChild(r);
-const dif=P.ingresoMes-TOT_DEUDA-bolsas-p.pres;
-if(Math.abs(dif)>1){
-const destino=bolsaMasAtrasada();
-const r2=document.createElement('div'); r2.className='row';
-r2.innerHTML='<div><div class="nm">'+(dif>0?'Sobra este mes':'Falta este mes')+'</div><div class="meta">'+
-(dif>0?'Este mes caen menos pagos fijos de lo normal. Se va a '+esc(destino)+', que es la bolsa más atrasada.'
-:'Este mes caen más pagos fijos de lo normal. Sale de '+esc(destino)+'.')+'</div></div>'+
-'<div class="v '+(dif>0?'pos':'neg')+'">'+(dif>0?'+':'−')+mxn(Math.abs(dif))+'</div>';
-c.appendChild(r2);
-}
-}
 /* caja completa del mes: gasto + bolsas + deudas */
 function renderCaja(p){
 const items=itemsDe(mesVista)||[], c=document.getElementById('cajaRows'); c.innerHTML='';
@@ -1306,10 +1297,10 @@ g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v).toFixed(1)+'" y2="'+y(v).toFixed(
 // lo que ya estaba comprometido antes de empezar el mes
 g+='<rect x="'+L+'" y="'+y(BASE).toFixed(1)+'" width="'+(W-L-R)+'" height="'+(y(0)-y(BASE)).toFixed(1)+'" fill="var(--surface-2)"/>'+
 '<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(BASE).toFixed(1)+'" y2="'+y(BASE).toFixed(1)+'" stroke="var(--line-strong)" stroke-width="1.5"/>'+
-'<text x="'+(L+5)+'" y="'+(y(BASE/2)+3).toFixed(1)+'" font-size="8" fill="var(--muted)" font-family="var(--ui)" letter-spacing=".04em">A LAS BOLSAS · '+mxn(BASE)+'</text>';
+'<text x="'+(L+5)+'" y="'+(y(BASE/2)+3).toFixed(1)+'" font-size="8" fill="var(--muted)" font-family="var(--ui)" letter-spacing=".04em">BOLSAS</text>';
 // hasta dónde llega lo que entra
 g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(P.ingresoMes).toFixed(1)+'" y2="'+y(P.ingresoMes).toFixed(1)+'" stroke="var(--oro)" stroke-width="1.5" stroke-dasharray="2 3"/>'+
-'<text x="'+(W-R)+'" y="'+(y(P.ingresoMes)-5).toFixed(1)+'" text-anchor="end" font-size="8.5" font-weight="600" fill="var(--oro)" font-family="var(--num)">lo que entra · '+mxn(P.ingresoMes)+'</text>';
+'<text x="'+(L+3)+'" y="'+(y(P.ingresoMes)-5).toFixed(1)+'" font-size="8.5" font-weight="600" fill="var(--oro)" font-family="var(--num)" stroke="var(--surface)" stroke-width="3" paint-order="stroke">Sueldo: '+mxn(P.ingresoMes)+'</text>';
 // área de lo real
 if(real.length>1)
 g+='<path d="'+lpFrom(real,1)+' L '+x(real.length).toFixed(1)+' '+y(BASE).toFixed(1)+' L '+x(1).toFixed(1)+' '+y(BASE).toFixed(1)+' Z" fill="var(--accent-soft)" stroke="none"/>';
@@ -1319,7 +1310,7 @@ g+='<path d="'+lpFrom(tip,1)+'" fill="none" stroke="var(--muted)" stroke-width="
 if(real.length)
 g+='<path d="'+lpFrom(real,1)+'" fill="none" stroke="var(--ok)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
 // proyección, del punto de hoy al cierre
-const est=semaforo(p), col=est==='cr'?'var(--crit)':(est==='wa'?'var(--warn)':'var(--ok)');
+const est=semaforo(p), col=est==='cr'?'var(--crit)':'var(--ok)';
 if(proyLine.length>1)
 g+='<path d="'+lpFrom(proyLine,p.dia)+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-dasharray="3 3" stroke-linejoin="round" opacity="0.9"/>';
 // punto de hoy
@@ -1469,6 +1460,16 @@ else if(esp>0 && gas>esp*1.15) est='wa';
 return {k,gas,b,esp,est,movs:porRub[k],pct:b.total?gas/b.total:0,
 marca:b.total?Math.min(100,esp/b.total*100):0};
 }).sort((a,b)=>b.pct-a.pct);
+/* lo que ya salió por su cuenta: las bolsas y las deudas del mes */
+const yaIdo=[];
+Object.keys(PROV).forEach(k=>yaIdo.push({k,monto:PROV[k],tipo:'bolsa'}));
+['Viajes','Proyectos'].forEach(k=>{ if(REP_MES[k]) yaIdo.push({k,monto:REP_MES[k],tipo:'bolsa'}); });
+{const dd=deudasPorDia(mesVista);
+ RECURRENTES_VIVOS().filter(r=>r.bucket==='DEUDA').forEach(r=>{
+   const [,mm]=mesVista.split('-').map(Number);
+   if(r.meses && !r.meses.includes(mm)) return;
+   yaIdo.push({k:r.grupo,monto:montoRec(r),tipo:'deuda',dia:r.dia});
+ });}
 const c=document.getElementById('rubList'); c.innerHTML='';
 filas.forEach(f=>{
 const el=document.createElement('div'); el.className='rub'; el.tabIndex=0; el.setAttribute('role','button');
@@ -1493,8 +1494,17 @@ el.addEventListener('click',tog);
 el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();tog();} });
 c.appendChild(el);
 });
+const hd=document.createElement('div'); hd.className='hl'; hd.style.marginTop='16px';
+hd.textContent='Bolsas y deudas'; c.appendChild(hd);
+yaIdo.sort((a,b)=>b.monto-a.monto).forEach(f=>{
+const el=document.createElement('div'); el.className='rub ido';
+el.innerHTML='<div class="rn">'+esc(f.k)+'<span class="tagfijo">'+(f.tipo==='bolsa'?'a la bolsa':'deuda')+'</span></div>'+
+'<div class="rv"><b>'+mxn(f.monto)+'</b> / '+mxn(f.monto)+'</div>'+
+'<div class="tr"><i class="gasto" style="width:100%"></i></div>';
+c.appendChild(el);
+});
 const ley=document.createElement('p'); ley.className='foot'; ley.style.marginTop='10px';
-ley.textContent = p.cerrado ? '' : 'La marca gris es dónde debería ir al día '+p.dia+'. Los rubros marcados como fijos no llevan marca: se pagan completos el día que toca.';
+ley.textContent = p.cerrado ? '' : 'La marca gris es dónde debería ir al día '+p.dia+'. Lo de abajo sale solo cada mes: en cuanto entra la quincena ya está apartado o pagado.';
 c.appendChild(ley);
 }
 /* ============ BOLSAS ============ */
@@ -1591,6 +1601,34 @@ return n;
 }
 /* lo que ya tiene dueño dentro de una bolsa: los viajes y obras abiertos */
 const GRANDES=['Viajes','Proyectos','Emergencia'];
+/* las bolsas que se miden por año: cuánto se lleva del presupuesto anual */
+const PRES_ANUAL=CFG.presupuestoAnual||{};
+/* ¿alcanza la bolsa para cerrar el año, o hay que fondearla? */
+function fondeoAnual(k){
+const anual=PRES_ANUAL[k]; if(!anual) return null;
+const usado=gastoAnual(k), restante=Math.max(0,anual-usado);
+const mesesQuedan=12-(hoy.getMonth()+1);
+const entra=aporte(k)*mesesQuedan, saldo=saldoBolsa(k);
+const cubre=saldo+entra, falta=Math.round(restante-cubre);
+/* a qué mes llega el saldo si el año siguiente gasta parejo */
+const porMes=anual/12; let m=hoy.getMonth(), acum=saldo;
+let i=0; while(acum>=porMes && i<36){ acum+=aporte(k)-porMes; m++; i++; }
+const d=new Date(hoy.getFullYear(),m,1);
+return {anual,usado,restante,entra,saldo,cubre,falta,
+        hasta:MESES_L[d.getMonth()]+' '+d.getFullYear(), meses:i,
+        avisa: falta>0 || i<=6};
+}
+function gastoAnual(k){
+const y=String(hoy.getFullYear());
+let t=((CFG.gastoAnualPrevio||{})[y]||{})[k]||0;
+const cuenta=(arr)=>arr.forEach(m=>{
+  const kk = m.bucket==='VIAJES'?'Viajes' : (m.bucket==='CAPITAL'?'Proyectos' : m.grupo);
+  if(kk===k) t+=m.monto;
+});
+if(ymActual>=ARR && ymActual.slice(0,4)===y) cuenta(movs);
+Object.keys(cacheMes).forEach(ym=>{ if(ym>=ARR && ym!==ymActual && ym.slice(0,4)===y) cuenta(cacheMes[ym]||[]); });
+return t;
+}
 function comprometido(k){
 return planesAbiertos().filter(p=>p.bolsa===k)
 .reduce((a,p)=>a+Math.max(0,p.estimado-pagadoPlan(p)),0);
@@ -1603,6 +1641,14 @@ document.getElementById('bolTotal').textContent=mxn(total);
 const aportes=todas.reduce((a,k)=>a+aporte(k),0);
 const n=mesesDesdeArranque();
 document.getElementById('bolDelta').textContent='Cada mes le ponemos '+mxn(aportes)+' entre todas. Llevamos '+n+' mes'+(n===1?'':'es')+' con este sistema.';
+{const av=document.getElementById('avisoFondeo');
+ const pend=Object.keys(PRES_ANUAL).map(k=>[k,fondeoAnual(k)]).filter(([k,f])=>f&&f.avisa);
+ if(av){ av.hidden=!pend.length;
+  if(pend.length) av.innerHTML=pend.map(([k,f])=> f.falta>0
+    ? '<b>'+esc(k)+'</b> no llega al cierre del año: faltan <b>'+mxn(f.falta)+'</b>. De la quincena entran '+
+      mxn(f.entra)+' de aquí a diciembre y el plan pide '+mxn(f.restante)+'.'
+    : '<b>'+esc(k)+'</b> se está agotando: aguanta hasta <b>'+esc(f.hasta)+'</b>. Toca fondearla con un bono.').join('<br>');
+ }}
 const delAno=todas.filter(k=>!GRANDES.includes(k));
 const grandes=todas.filter(k=>GRANDES.includes(k));
 const orden=k=>{ const p=pagosDe(k)[0]; return p?p.m:99; };
@@ -1617,16 +1663,19 @@ encabeza('Las del año','qué tanto llevan para su próximo recibo');
 delAno.concat(['__corte__']).concat(grandes).forEach(k=>{
 if(k==='__corte__'){ encabeza('Las grandes','cuánto tienen libre después de lo comprometido'); return; }
 const saldo=saldoBolsa(k), p0=pagosDe(k)[0];
-const meta = p0?p0.monto : (comprometido(k) || (P.fondos.find(f=>f.id===k)||{}).objetivo || 0);
-const pct = meta>0 ? Math.min(100,Math.max(0,saldo/meta*100)) : 0;
-const lleno = meta>0 && saldo>=meta;
-const der = p0 ? MESES[p0.fecha.getMonth()]+' · '+mxn(p0.monto)
+const anual=PRES_ANUAL[k];
+const meta = anual ? anual : (p0?p0.monto : (comprometido(k) || (P.fondos.find(f=>f.id===k)||{}).objetivo || 0));
+const consumido = anual ? gastoAnual(k) : saldo;
+const pct = meta>0 ? Math.min(100,Math.max(0,consumido/meta*100)) : 0;
+const lleno = anual ? false : (meta>0 && saldo>=meta);
+const der = anual ? ('quedan '+mxn(Math.max(0,anual-consumido))+' del año')
+: (p0 ? MESES[p0.fecha.getMonth()]+' · '+mxn(p0.monto)
 : (comprometido(k) ? 'libre '+mxn(saldo-comprometido(k))
-: ((P.fondos.find(f=>f.id===k)||{}).objetivo ? Math.round(pct)+'% de la meta' : 'sin fecha'));
+: ((P.fondos.find(f=>f.id===k)||{}).objetivo ? Math.round(pct)+'% de la meta' : 'sin fecha')));
 const b=document.createElement('button'); b.type='button'; b.className='minib'+(bolAbierta===k?' on':'');
 b.innerHTML='<span class="mn">'+esc(k==='Colchón'?'Colchón del gasto':k)+'</span>'+
-'<span class="tr"><i class="'+(lleno?'':'wa')+'" style="width:'+pct.toFixed(0)+'%"></i></span>'+
-'<span class="mv">'+mxn(saldo)+'</span><span class="mm">'+esc(der)+'</span>';
+'<span class="tr"><i class="'+(anual?(pct>100?'cr':''):(lleno?'':'wa'))+'" style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>'+
+'<span class="mv">'+mxn(anual?consumido:saldo)+'</span><span class="mm">'+esc(der)+'</span>';
 b.addEventListener('click',()=>{ bolAbierta = bolAbierta===k?null:k; renderFondos();
 const t=document.getElementById('bol_'+cssId(k)); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); });
 rs.appendChild(b);
@@ -1693,7 +1742,24 @@ const fondo=P.fondos.find(f=>f.id===k);
 const sub=(CFG.subtitulos||{})[k] || (fondo?fondo.desc:'');
 const ap=aporte(k), p0=pagos[0];
 let clase='bolsa', cuerpo='';
-if(p0){
+const anual=PRES_ANUAL[k];
+if(anual){
+// esta bolsa se mide por año, no por saldo
+const usado=gastoAnual(k), queda=anual-usado, pct=Math.min(100,usado/anual*100);
+clase+= queda<0 ? ' urge' : ' libre';
+cuerpo='<div class="tr" style="margin-top:11px"><i class="'+(queda<0?'cr':(pct>85?'wa':''))+'" style="width:'+pct.toFixed(0)+'%"></i></div>'+
+'<div class="pl" style="margin-top:7px"><span>'+hoy.getFullYear()+'</span><b>'+mxn(usado)+' de '+mxn(anual)+'</b></div>'+
+'<div class="pl"><span>'+(queda>=0?'Queda para el año':'Ya nos pasamos por')+'</span><b class="'+(queda>=0?'pos':'neg')+'">'+mxn(Math.abs(queda))+'</b></div>'+
+'<div class="pl" style="font-size:11.5px"><span>Guardado en la bolsa</span><span>'+mxn(saldo)+'</span></div>';
+{const f=fondeoAnual(k);
+ if(f && f.avisa)
+   cuerpo+='<div class="avisa">'+(f.falta>0
+     ? 'Para cerrar el año faltan <b>'+mxn(f.falta)+'</b>.'
+     : 'Al ritmo de hoy la bolsa aguanta hasta <b>'+esc(f.hasta)+'</b>.')+
+     ' Hay que fondearla con un bono o recortar el plan.</div>';
+ else if(f)
+   cuerpo+='<div class="pl" style="font-size:11.5px"><span>Al ritmo de hoy alcanza hasta</span><span>'+esc(f.hasta)+'</span></div>';}
+} else if(p0){
 // una sola idea: qué tan llena está para el recibo que viene
 const pct=Math.min(100,saldo/p0.monto*100), lleno=saldo>=p0.monto;
 clase+=lleno?' libre':' urge';
@@ -1740,7 +1806,8 @@ cuerpo+=movimientosBolsa(k,saldo);
 el.className=clase+(bolAbierta===k?' foco':'');
 el.id='bol_'+cssId(k);
 el.innerHTML='<div class="bh"><div><div class="bt">'+esc(k)+'</div><div class="bsub">'+esc(sub)+'</div></div>'+
-'<div class="bsal">'+mxn(saldo)+'<small>le ponemos '+mxnA(ap)+'/mes</small></div></div>'+cuerpo;
+'<div class="bsal">'+mxn(anual?gastoAnual(k):saldo)+'<small>'+
+(anual?('de '+mxn(anual)+' este año'):('le ponemos '+mxnA(ap)+'/mes'))+'</small></div></div>'+cuerpo;
 el.querySelectorAll('.verMovs').forEach(b=>b.addEventListener('click',e=>{
 e.stopPropagation();
 movAbierta = movAbierta===b.dataset.bolsa ? null : b.dataset.bolsa;
@@ -1847,39 +1914,51 @@ const NOTAS={
 };
 function renderCal(){
 const c=document.getElementById('calList'); if(!c) return; c.innerHTML='';
-// qué tiene de distinto cada mes: los recibos que salen de bolsas y los ingresos extra
-const filas=[];
-for(let k=0;k<12;k++){
+/* un renglón por evento, no por mes: los meses sin nada no aparecen */
+const ev=[];
+for(let k=0;k<14;k++){
   const d=new Date(hoy.getFullYear(),hoy.getMonth()+k,1), mes=d.getMonth()+1;
   const ym=d.getFullYear()+'-'+String(mes).padStart(2,'0');
-  const recibos=[];
+  if(ym<ymActual) continue;
   Object.keys(CFG.pagosBolsa||{}).forEach(kk=>{
     const def=CFG.pagosBolsa[kk];
-    if(def.meses.includes(mes)) recibos.push({de:kk,monto:def.monto,que:def.que});
-    if(def.extra && def.extra.meses.includes(mes)) recibos.push({de:kk,monto:def.extra.monto,que:def.extra.que});
+    if(def.meses.includes(mes)) ev.push({ym,d,bolsa:kk,nom:kk,que:def.que,monto:def.monto});
+    if(def.extra&&def.extra.meses.includes(mes)) ev.push({ym,d,bolsa:kk,nom:kk,que:def.extra.que,monto:def.extra.monto});
   });
-  planes.filter(pl=>!pl.cerrado && pl.mes===ym).forEach(pl=>{
-    recibos.push({de:pl.bolsa,monto:Math.max(0,pl.estimado-pagadoPlan(pl)),que:pl.nom});
+  planes.filter(pl=>!pl.cerrado&&pl.mes===ym).forEach(pl=>{
+    const falta=Math.max(0,pl.estimado-pagadoPlan(pl));
+    if(falta>0) ev.push({ym,d,bolsa:pl.bolsa,nom:pl.nom,que:'de la bolsa de '+pl.bolsa,monto:falta});
   });
-  const extra=P.eventosIngreso.filter(e=>e.ym===ym);
-  filas.push({d,mes,recibos,extra,total:recibos.reduce((a,b)=>a+b.monto,0)});
+
 }
-const mx=Math.max(1,...filas.map(x=>x.total));
-filas.forEach(x=>{
-  const row=document.createElement('div'); row.className='cmo';
-  const detalle = x.recibos.length
-    ? x.recibos.map(r=>esc(r.que)+' '+mxn(r.monto)).join(' · ')
-    : 'nada fuera de lo normal';
-  row.innerHTML='<div class="mo">'+MESES[x.d.getMonth()]+'<br>'+String(x.d.getFullYear()).slice(2)+'</div>'+
-    '<div class="track"><i class="'+(x.total>60000?'hot':(x.total>15000?'warm':''))+
-      '" style="width:'+(x.total/mx*100).toFixed(0)+'%"></i></div>'+
-    '<div class="right">'+(x.total?'<span class="tag">sale de bolsas '+mxn(x.total)+'</span>':'<span class="tag">—</span>')+
-      (x.extra.length?'<span class="net pos">entra '+mxn(x.extra.reduce((a,b)=>a+b.monto,0))+'</span>':'')+'</div>'+
-    '<div class="comentario">'+detalle+
-      (x.extra.length?' · '+x.extra.map(e=>esc(e.nom)).join(' y '):'')+'</div>';
-  c.appendChild(row);
+if(!ev.length){ c.innerHTML='<p class="sub">Nada grande a la vista en los próximos meses.</p>'; return; }
+/* ¿la bolsa va a alcanzar? se va llenando mes a mes y cada recibo la vacía */
+const saldo={}; const gastadoYa={};
+ev.forEach(e=>{ if(e.bolsa && saldo[e.bolsa]===undefined) saldo[e.bolsa]=saldoBolsa(e.bolsa); });
+ev.sort((a,b)=>a.ym<b.ym?-1:(a.ym>b.ym?1:0));
+let ymPrev=null;
+ev.forEach(e=>{
+  const row=document.createElement('div'); row.className='evrow';
+  const mesTxt=MESES_L[e.d.getMonth()].charAt(0).toUpperCase()+MESES_L[e.d.getMonth()].slice(1)+
+    (e.d.getFullYear()!==hoy.getFullYear()?' '+String(e.d.getFullYear()).slice(2):'');
+  let estado='', cls='';
+  if(e.entra){ cls='pos'; estado='entra este mes'; }
+  else {
+    const meses=Math.max(0,mesesEntreYm(ymActual,e.ym));
+    const llega=(saldo[e.bolsa]||0)+aporte(e.bolsa)*meses-(gastadoYa[e.bolsa]||0);
+    if(llega>=e.monto*1.5){ estado=esc(e.que); }
+    else if(llega>=e.monto){ estado=esc(e.que)+' · justo alcanza'; }
+    else { cls='neg'; estado='faltarían '+mxn(e.monto-llega); }
+    gastadoYa[e.bolsa]=(gastadoYa[e.bolsa]||0)+e.monto;
+  }
+  row.innerHTML='<div class="evm">'+(e.ym===ymPrev?'':esc(mesTxt))+'</div>'+
+    '<div class="evq"><span>'+esc(e.nom)+'</span><small class="'+cls+'">'+estado+'</small></div>'+
+    '<div class="evv '+cls+'">'+(e.entra?'+':'')+mxn(e.monto)+'</div>';
+  c.appendChild(row); ymPrev=e.ym;
 });
 }
+function mesesEntreYm(a,b){ const [ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);
+return (by-ay)*12+(bm-am); }
 /* ============ AHORROS ============ */
 let saldos={afore:P.retiro.afore,cajaBanamex:P.retiro.cajaBanamex};
 function proyRetiro(){
