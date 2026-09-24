@@ -197,6 +197,11 @@ padding:3px 8px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
 .spark{width:100%;height:96px;display:block}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--muted);margin-top:8px}
 .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.legend i.ln{width:18px;height:3px;border-radius:2px}
+.legend i.solida{background:var(--ok)}
+.legend i.guion{background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)}
+.legend i.punteada{background:repeating-linear-gradient(90deg,var(--ok) 0 3px,transparent 3px 6px)}
+.legend i.bloque{width:13px;height:9px;background:var(--surface-2);border:1px solid var(--line-strong)}
 table.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 table.tbl th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:700;padding:0 0 7px;border-bottom:1px solid var(--line)}
 table.tbl td{padding:8px 0;border-bottom:1px solid var(--line)}
@@ -467,15 +472,13 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 </div>
 <div class="panel">
 <h2 class="sec">Cómo vamos contra un mes promedio</h2>
-<p class="hint">Abajo de todo está lo que ya estaba comprometido antes de empezar el mes. La línea verde es lo que llevamos encima de eso; la gris es un mes promedio.</p>
 <svg class="chart" id="chAcum" viewBox="0 0 320 176" role="img" aria-label="Gasto acumulado del mes contra la curva típica"></svg>
 <div class="legend">
-<span><i style="background:var(--ok)"></i>Este mes</span>
-<span><i style="background:var(--muted)"></i>Mes promedio</span>
-<span><i style="background:var(--line-strong)"></i>Ya comprometido</span>
-<span>· · · así vamos a cerrar</span>
+<span><i class="ln solida"></i>Este mes</span>
+<span><i class="ln guion"></i>Mes promedio</span>
+<span><i class="ln punteada"></i>así vamos a cerrar</span>
+<span><i class="bloque"></i>Ya comprometido</span>
 </div>
-<p class="foot" id="acumPie" style="margin-top:11px;padding-top:11px;border-top:1px solid var(--line)">—</p>
 
 </div>
 <div class="panel" id="alertPanel" hidden>
@@ -1340,14 +1343,6 @@ g+='<text x="'+L+'" y="'+(H-9)+'" font-size="9" fill="var(--faint)" font-family=
 '<text x="'+((L+W-R)/2).toFixed(0)+'" y="'+(H-1)+'" text-anchor="middle" font-size="8.5" fill="var(--faint)" font-family="var(--ui)">día del mes</text>';
 svg.setAttribute('viewBox','0 0 '+W+' '+H);
 svg.innerHTML=g;
-const pie=document.getElementById('acumPie'); const A=ahorroDelMes(p);
-if(pie){
-let t='De los <b>'+mxn(P.ingresoMes)+'</b> que entran: al cierre se van <b>'+mxn(CIERRE)+'</b> y <b>'+mxn(A.ahorro)+'</b> al ahorro.';
-if(A.delGuardado>0) t+=' <b class="neg">Este mes hay que sacar '+mxn(A.delGuardado)+' de lo ya guardado.</b>';
-else if(A.falta>0) t+=' El Colchón no alcanzó: el ahorro baja '+mxn(A.falta)+'.';
-else if(A.derrame>0) t+=' El Colchón llegó a su tope de '+mxn(A.tope)+' y el resto se fue al ahorro.';
-pie.innerHTML=t;
-}
 }
 /* la peor señal: el mes se comió el ahorro ya guardado */
 function pintaRetiro(p){
