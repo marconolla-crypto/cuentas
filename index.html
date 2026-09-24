@@ -64,6 +64,8 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .brand span{color:var(--accent)}
 .periodo{font-family:var(--num);font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 main{flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;max-width:760px;width:100%;margin:0 auto}
+.view{display:flex;flex-direction:column;gap:16px}
+.view>.stack{margin-top:-8px}
 .view[hidden]{display:none!important}
 nav.tabs{position:sticky;bottom:0;z-index:30;margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);
 background:var(--surface);border-top:1px solid var(--line);padding:8px 4px calc(9px + env(safe-area-inset-bottom,0px))}
@@ -215,7 +217,8 @@ display:flex;flex-direction:column;gap:12px;margin:auto 0 calc(72px + env(safe-a
 /* ---- tablero ---- */
 .chart{width:100%;display:block;overflow:visible}
 .dualbar{display:flex;flex-direction:column;gap:6px;margin-top:14px}
-.dualbar .lane{display:grid;grid-template-columns:72px 1fr auto;gap:8px;align-items:center;font-size:11.5px;color:var(--muted)}
+.dualbar .lane{display:grid;grid-template-columns:72px minmax(0,1fr) 92px;gap:8px;align-items:center;font-size:11.5px;color:var(--muted)}
+.dualbar .lane b{text-align:left;white-space:nowrap}
 .dualbar .tr{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
 .dualbar .tr i{display:block;height:100%;border-radius:4px;background:var(--oro)}
 .dualbar .tr i.gasto{background:var(--ok)}
@@ -395,14 +398,14 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <input class="note" id="nota" placeholder="¿De qué fue? (Eline, gasolina, la farmacia…)" autocomplete="off" style="margin-top:12px">
 </div>
 <p class="saldobolsa" id="saldoBolsa" hidden></p>
-<div style="margin-top:14px"><button class="btn" id="saveTop" disabled>Registrar</button></div>
-<div class="panel" style="margin-top:14px" id="selPanel">
+<div><button class="btn" id="saveTop" disabled>Registrar</button></div>
+<div class="panel" id="selPanel">
 <h2 class="sec" id="selTitulo">¿A qué lo cargamos?</h2>
 <p class="hint" id="selHint" hidden></p>
 <div id="grupos"></div>
 </div>
-<div style="margin-top:14px"><button class="btn" id="save" disabled>Registrar</button></div>
-<div id="recPie" style="margin-top:22px">
+<div><button class="btn" id="save" disabled>Registrar</button></div>
+<div id="recPie" style="margin-top:6px">
 <h2 class="sec" style="margin-bottom:8px">Pagos recurrentes</h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn ghost" id="btnRecNuevo" type="button" style="flex:1;min-width:150px">+ Pago recurrente</button>
@@ -418,20 +421,6 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="sub" id="mesOrigen">—</div>
 </div>
 <button class="navmes" id="mesNext" type="button" aria-label="Mes siguiente">›</button>
-</div>
-<div class="panel col">
-<button class="colh" type="button" id="hDonde" aria-expanded="false" aria-controls="bDonde">
-<span class="colt">De dónde salen los números<small id="dondeVal">—</small></span>
-<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-</button>
-<div class="colb" id="bDonde" hidden><div class="rows" id="dondeSalen"></div></div>
-</div>
-<div class="panel col" id="cajaPanel">
-<button class="colh" type="button" id="hCaja" aria-expanded="false" aria-controls="bCaja">
-<span class="colt">Todo lo que salió de la cuenta<small id="cajaVal">—</small></span>
-<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-</button>
-<div class="colb" id="bCaja" hidden><div class="rows" id="cajaRows"></div></div>
 </div>
 <div class="panel" id="hoyHero">
 <div class="hero">
@@ -475,6 +464,20 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <p class="foot" style="margin-top:10px">La barra es lo que sale de las bolsas ese mes. El gasto del día a día es parejo todos los meses, por eso no aparece aquí.</p>
 </div>
 </div>
+<div class="panel col">
+<button class="colh" type="button" id="hDonde" aria-expanded="false" aria-controls="bDonde">
+<span class="colt">De dónde salen los números<small id="dondeVal">—</small></span>
+<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+</button>
+<div class="colb" id="bDonde" hidden><div class="rows" id="dondeSalen"></div></div>
+</div>
+<div class="panel col" id="cajaPanel">
+<button class="colh" type="button" id="hCaja" aria-expanded="false" aria-controls="bCaja">
+<span class="colt">Todo lo que salió de la cuenta<small id="cajaVal">—</small></span>
+<svg class="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+</button>
+<div class="colb" id="bCaja" hidden><div class="rows" id="cajaRows"></div></div>
+</div>
 </section>
 <!-- BOLSAS -->
 <section class="view" id="v-fondos" hidden>
@@ -490,14 +493,14 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <p class="hint">Ordenadas por cuál paga primero. Toca una para ver su detalle.</p>
 <div id="bolResumen"></div>
 </div>
-<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
 <button class="btn ghost" id="btnPlan" type="button" style="flex:1;min-width:150px">+ Plan</button>
 <button class="btn ghost" id="btnMover" type="button" style="flex:1;min-width:150px">↔ Mover entre bolsas</button>
 </div>
-<div class="panel flat" style="margin-top:8px"><h2 class="sec" style="margin-bottom:8px">Las del año</h2>
+<div class="panel flat"><h2 class="sec" style="margin-bottom:8px">Las del año</h2>
 <p class="hint">Recibos que ya conocemos. Se llenan y se vacían, cada año igual.</p></div>
 <div class="stack" id="bolsasFecha"></div>
-<div class="panel flat" style="margin-top:6px"><h2 class="sec" style="margin-bottom:8px">Las grandes</h2>
+<div class="panel flat"><h2 class="sec" style="margin-bottom:8px">Las grandes</h2>
 <p class="hint">Sin fecha fija. Adentro va lo que ya decidimos gastar de cada una.</p></div>
 <div class="stack" id="bolsasLibres"></div>
 </section>
