@@ -177,7 +177,14 @@ padding:3px 8px;border-radius:999px;text-transform:uppercase;white-space:nowrap}
 .recacts button{flex:1;appearance:none;border-radius:9px;font-family:var(--ui);font-size:13px;font-weight:600;padding:9px 6px;cursor:pointer;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted)}
 .recacts button.ok{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .recacts button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.recprox{font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.recprox{appearance:none;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);
+background:none;font-family:var(--ui);cursor:pointer;font-size:12.5px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;min-height:44px}
+.recprox:active{opacity:.55}
+.fechafila{display:flex;justify-content:center;align-items:center;margin-top:10px;position:relative}
+.fechafila button{appearance:none;background:none;border:0;font-family:var(--ui);font-size:12.5px;
+color:var(--muted);padding:7px 14px;border-radius:999px;cursor:pointer;min-height:38px}
+.fechafila button.otro{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.fechaoculta{position:absolute;inset:0;opacity:0;width:100%;height:100%;border:0;padding:0}
 .recprox:last-child{border-bottom:0}
 .recprox b{font-family:var(--num);font-weight:500;color:var(--ink)}
 .cal{display:flex;flex-direction:column}
@@ -430,6 +437,7 @@ main{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contai
 <div class="chips" style="justify-content:center;margin-bottom:12px" id="personas"></div>
 <div class="keys" id="keys"></div>
 <input class="note" id="nota" placeholder="¿De qué fue? (Eline, gasolina, la farmacia…)" autocomplete="off" style="margin-top:12px">
+<div class="fechafila"><button type="button" id="btnFecha">Hoy</button><input type="date" id="capFecha" class="fechaoculta"></div>
 </div>
 <p class="saldobolsa" id="saldoBolsa" hidden></p>
 <div><button class="btn" id="saveTop" disabled>Registrar</button></div>
@@ -732,6 +740,17 @@ elAmt.textContent=fmtTecleado(cap.monto);
 elAmt.classList.toggle('zero',!cap.monto);
 elAmt.classList.toggle('ingreso',cap.modo==='ingreso');
 pintaTape();
+{const bf=document.getElementById('btnFecha'), inp=document.getElementById('capFecha');
+ if(bf&&inp){
+  const hoyISO=isoDia(new Date());
+  inp.max=hoyISO;
+  if(!bf._li){ bf._li=1;
+    inp.addEventListener('change',()=>{ cap.fecha = inp.value && inp.value!==hoyISO ? inp.value : null; renderCaptura(); });
+  }
+  inp.value=cap.fecha||hoyISO;
+  bf.textContent = cap.fecha ? fechaCorta(cap.fecha) : 'Hoy';
+  bf.classList.toggle('otro', !!cap.fecha);
+ }}
 const tot=totalCaptura();
 elSave.textContent = (cap.modo==='gasto' ? 'Anotar gasto' : 'Anotar ingreso') +
   (cap.tickets.length ? ' · '+mxnA(tot) : '');
@@ -811,23 +830,33 @@ const ing = ym===ymActual ? ingresos : [];
 try{ await db.doc('movimientos/'+ym).set({ym:ym,items:it,ingresos:ing}); }
 catch(e){ toast('Guardado aquí; no se pudo sincronizar'); }
 }
+function fechaCaptura(){
+if(!cap.fecha) return new Date().toISOString();
+const n=new Date();
+return new Date(cap.fecha+'T'+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':00').toISOString();
+}
 async function guardarCaptura(){
+let otroMes=null;
 const v=totalCaptura(); const partes=cap.tickets.length?cap.tickets.concat(
   parseFloat(cap.monto||'0')>0?[Math.round(parseFloat(cap.monto)*100)/100]:[]):null;
 let kBolsa=null;
 if(cap.modo==='ingreso'){
 const t=TIPOS_ING.find(x=>x.nom===cap.sel);
 ingresos.push({id:'i'+Date.now().toString(36),monto:v,tipo:t.id,nom:t.nom,destino:t.destino,
-persona:cap.persona,nota:document.getElementById('nota').value.trim(),partes:partes,fecha:new Date().toISOString()});
+persona:cap.persona,nota:document.getElementById('nota').value.trim(),partes:partes,fecha:fechaCaptura()});
 } else {
 const it=catalogoVivo().flatMap(s=>s.items).find(x=>x.nom===cap.sel);
 kBolsa=bolsaDe(it);
-movs.push({id:'m'+Date.now().toString(36),monto:v,etiqueta:it.nom,grupo:it.key,bucket:it.bucket,
+const mov={id:'m'+Date.now().toString(36),monto:v,etiqueta:it.nom,grupo:it.key,bucket:it.bucket,
 plan:planDe(it.key,it.plan),proyecto:it.proyecto||null,persona:cap.persona,partes:partes,
-nota:document.getElementById('nota').value.trim(),fecha:new Date().toISOString()});
+nota:document.getElementById('nota').value.trim(),fecha:fechaCaptura()};
+/* si lo fechaste en un mes pasado, se guarda en ese mes */
+const ymMov=mov.fecha.slice(0,7);
+if(ymMov!==ymActual){ await cargarMes(ymMov); cacheMes[ymMov]=(cacheMes[ymMov]||[]).concat([mov]); otroMes=ymMov; }
+else movs.push(mov);
 }
-cap.monto=''; cap.sel=null; cap.tickets=[]; if(DUENO) cap.persona=DUENO; document.getElementById('nota').value='';
-renderCaptura(); await persistir();
+cap.monto=''; cap.sel=null; cap.tickets=[]; cap.fecha=null; if(DUENO) cap.persona=DUENO; document.getElementById('nota').value='';
+renderCaptura(); await persistir(otroMes||undefined);
 toast(cap.modo==='ingreso' ? 'Ingreso · '+mxnA(v)
   : (kBolsa ? 'Salió de '+kBolsa+' · quedan '+mxnA(saldoBolsa(kBolsa)) : 'Anotado · '+mxnA(v)));
 }
@@ -849,8 +878,9 @@ const ing = regVista===ymActual ? ingresos : [];
 const todo=[...items.map(m=>({...m,_t:'g'})),...ing.map(i=>({...i,_t:'i'}))]
 .sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 const g=items.reduce((a,b)=>a+b.monto,0), i2=ing.reduce((a,b)=>a+b.monto,0);
-document.getElementById('regResumen').textContent =
-  todo.length ? (items.length+' movimientos · '+mxn(g)+(i2?' · +'+mxn(i2):'')) : 'sin movimientos';
+document.getElementById('regResumen').textContent = todo.length
+  ? (items.length+' movimiento'+(items.length===1?'':'s')+' · salió '+mxn(g)+(i2?' · entró '+mxn(i2):''))
+  : 'sin movimientos';
 c.innerHTML='';
 if(!todo.length){ c.innerHTML='<p class="sub">No hay nada anotado en este mes.</p>'; return; }
 todo.forEach(m=>{
@@ -886,6 +916,7 @@ document.getElementById('modal').innerHTML=
 '<h3>'+esc(tipo==='i'?m.nom:(m.etiqueta||m.grupo))+'</h3>'+
 '<p class="sub">'+esc(m.persona)+' · '+new Date(m.fecha).getDate()+' '+MESES_L[new Date(m.fecha).getMonth()]+(m.partes&&m.partes.length>1?' · '+m.partes.length+' tickets: '+m.partes.map(x=>mxnA(x).replace('$','')).join(' + '):'')+'</p>'+
 '<label class="sub" for="eM">Monto</label><input class="inp" id="eM" type="number" inputmode="decimal" step="0.01" value="'+m.monto+'">'+
+'<label class="sub" for="eF">Fecha</label><input class="inp" id="eF" type="date" value="'+isoDia(m.fecha)+'" max="'+isoDia(new Date())+'">'+
 '<label class="sub" for="eN">Nota</label><input class="note" id="eN" value="'+esc(m.nota||'')+'">'+
 (tipo==='i'?'':'<label class="sub">¿En qué rubro va?</label><div class="chips" id="eR"></div>')+
 '<button class="btn" id="eS">Guardar cambios</button>'+
@@ -936,7 +967,26 @@ if(it){ mRef.grupo=it.key; mRef.etiqueta=it.nom; mRef.bucket=it.bucket;
 mRef.proyecto=it.proyecto||null; delete mRef.rec; }
 }
 if(tipo!=='i') mRef.plan=ePlan;
-cerrarModal(); await persistir(ym); toast('Cambio guardado');
+/* si le cambiaste el día, y cae en otro mes, el movimiento se muda de mes */
+const fNueva=document.getElementById('eF').value, ymNuevo=fNueva?fNueva.slice(0,7):ym;
+let mudado=false;
+if(fNueva && fNueva!==isoDia(mRef.fecha)){
+  const vieja=new Date(mRef.fecha);
+  mRef.fecha=new Date(fNueva+'T'+String(vieja.getHours()).padStart(2,'0')+':'+
+    String(vieja.getMinutes()).padStart(2,'0')+':00').toISOString();
+  if(tipo!=='i' && ymNuevo!==ym){
+    if(ymNuevo>ymActual){ toast('Esa fecha todavía no llega'); return; }
+    const copia=Object.assign({},mRef);
+    if(esMesActual) movs=movs.filter(x=>x.id!==id); else cacheMes[ym]=(cacheMes[ym]||[]).filter(x=>x.id!==id);
+    await cargarMes(ymNuevo);
+    if(ymNuevo===ymActual) movs.push(copia); else cacheMes[ymNuevo]=(cacheMes[ymNuevo]||[]).concat([copia]);
+    mudado=true;
+  }
+}
+cerrarModal();
+await persistir(ym);
+if(mudado){ await persistir(ymNuevo); toast('Movido a '+MESES_L[Number(ymNuevo.slice(5))-1]); }
+else toast('Cambio guardado');
 });
 document.getElementById('eD').addEventListener('click',async()=>{
 if(tipo==='i') ingresos=ingresos.filter(x=>x.id!==id);
@@ -973,6 +1023,10 @@ function montoRec(r){
   if(montosRec[r.id]!==undefined) return montosRec[r.id];
   if(r.auto==='playa'){ const v=pagoPlaya(ymActual); if(v) return v; }
   return r.monto; }
+function fechaCorta(iso){ const [y,m,d]=iso.split('-').map(Number);
+return d+' '+MESES[m-1]+(y!==hoy.getFullYear()?' '+String(y).slice(2):''); }
+function isoDia(d){ const x=new Date(d);
+return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
 function fISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function ocurrencias(){
 const y=hoy.getFullYear(), m=hoy.getMonth(), dm=new Date(y,m+1,0).getDate(), out=[];
@@ -1008,6 +1062,7 @@ Math.abs(new Date(m.fecha)-o.fecha)<=10*864e5);
 if(hit){ hit.rec=id+'@'+fISO(new Date(hit.fecha)); return true; }
 return false;
 }
+let adelantando=null;
 function renderRecurrentes(){
 const cont=document.getElementById('recPanel');
 const occ=ocurrencias();
@@ -1030,9 +1085,20 @@ o.fecha.getDate()+' '+MESES_L[o.fecha.getMonth()]+' · '+esc(o.r.grupo)+
 html+='</div>';
 }
 if(prox.length){
-html+='<div class="recwrap"><h2 class="sec">Lo que viene</h2>';
-prox.forEach(o=>{ html+='<div class="recprox"><span>'+esc(o.r.nom)+' · '+o.fecha.getDate()+' '+MESES_L[o.fecha.getMonth()]+
-'</span><b>'+mxnA(montoRec(o.r))+'</b></div>'; });
+html+='<div class="recwrap"><h2 class="sec">Lo que viene</h2>'+
+'<p class="hint">Toca uno si ya lo pagaste.</p>';
+prox.forEach((o,jx)=>{
+const ix=pend.length+jx;
+if(adelantando===o.clave){
+html+='<div class="recitem"><div><div class="rn">'+esc(o.r.nom)+'</div><div class="rm">'+
+o.fecha.getDate()+' '+MESES_L[o.fecha.getMonth()]+' · '+esc(o.r.grupo)+' · lo estás adelantando</div></div>'+
+'<input class="inp" id="rec_'+ix+'" type="number" inputmode="decimal" step="0.01" value="'+montoRec(o.r)+'" style="padding:8px 10px">'+
+'<div class="recacts"><button type="button" class="ok" data-a="ok" data-i="'+ix+'">Ya lo pagué</button>'+
+'<button type="button" data-a="cancel" data-i="'+ix+'">Todavía no</button></div></div>';
+} else {
+html+='<button type="button" class="recprox" data-abrir="'+esc(o.clave)+'"><span>'+esc(o.r.nom)+' · '+
+o.fecha.getDate()+' '+MESES_L[o.fecha.getMonth()]+'</span><b>'+mxnA(montoRec(o.r))+'</b></button>';
+}});
 html+='</div>';
 }
 cont.innerHTML=html;
@@ -1043,8 +1109,14 @@ if(pie && !pie.dataset.listo){
   pie.querySelector('#btnRecNuevo').addEventListener('click',()=>abrirRecurrente(null));
   pie.querySelector('#btnRecLista').addEventListener('click',abrirListaRecurrentes);
 }
+cont.querySelectorAll('button[data-abrir]').forEach(b=>b.addEventListener('click',()=>{
+adelantando = adelantando===b.dataset.abrir ? null : b.dataset.abrir;
+renderRecurrentes();
+}));
+const todas=pend.concat(prox);
 cont.querySelectorAll('button[data-a]').forEach(b=>b.addEventListener('click',async()=>{
-const o=pend[Number(b.dataset.i)];
+const o=todas[Number(b.dataset.i)];
+if(b.dataset.a==='cancel'){ adelantando=null; renderRecurrentes(); return; }
 if(b.dataset.a==='skip'){ omisiones.push(o.clave);
 if(db){ try{ await db.doc('config/omisiones').set({items:omisiones}); }catch(e){} }
 renderRecurrentes(); return; }
@@ -1052,8 +1124,10 @@ const v=Number(document.getElementById('rec_'+b.dataset.i).value);
 if(!(v>0)){ toast('Pon un monto válido'); return; }
 if(Math.abs(v-montoRec(o.r))>0.005){ montosRec[o.r.id]=v;
 if(db){ try{ await db.doc('config/montosRec').set(montosRec); }catch(e){} } }
+const cuando = o.fecha>new Date() ? new Date() : o.fecha;
 movs.push({id:'r'+Date.now().toString(36),monto:v,etiqueta:o.r.nom,grupo:o.r.grupo,bucket:o.r.bucket,
-proyecto:null,persona:cap.persona,nota:o.r.nota||'',fecha:o.fecha.toISOString(),rec:o.clave});
+proyecto:null,persona:cap.persona,nota:o.r.nota||'',fecha:cuando.toISOString(),rec:o.clave});
+adelantando=null;
 await persistir(); toast(o.r.nom+' · '+mxnA(v));
 }));
 }
