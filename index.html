@@ -1841,7 +1841,8 @@ const der = anual ? ('quedan '+mxn(Math.max(0,anual-consumido))+' del año')
 : ((P.fondos.find(f=>f.id===k)||{}).objetivo ? Math.round(pct)+'% de la meta' : 'sin fecha')));
 const b=document.createElement('button'); b.type='button'; b.className='minib'+(bolAbierta===k?' on':'');
 b.innerHTML='<span class="mn">'+esc(k==='Colchón'?'Colchón del gasto':k)+'</span>'+
-'<span class="tr"><i class="'+(anual?(pct>100?'cr':''):(lleno?'':'wa'))+'" style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>'+
+/* sin recibo ni meta no hay contra qué medir: sin barra, para que no parezca vacía */
+(anual||meta>0 ? '<span class="tr"><i class="'+(anual?(pct>100?'cr':''):(lleno?'':'wa'))+'" style="width:'+Math.min(100,pct).toFixed(0)+'%"></i></span>' : '')+
 '<span class="mv">'+mxn(anual?consumido:saldo)+'</span><span class="mm">'+esc(der)+'</span>';
 b.addEventListener('click',()=>{ bolAbierta = bolAbierta===k?null:k; renderFondos();
 const t=document.getElementById('bol_'+cssId(k)); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); });
