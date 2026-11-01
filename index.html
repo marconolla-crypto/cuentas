@@ -928,8 +928,11 @@ kBolsa=bolsaDe(it);
 const mov={id:'m'+Date.now().toString(36),monto:v,etiqueta:it.nom,grupo:it.key,bucket:it.bucket,
 plan:planDe(it.key,it.plan),proyecto:it.proyecto||null,persona:cap.persona,partes:partes,
 nota:document.getElementById('nota').value.trim(),fecha:fechaCaptura()};
-/* si lo fechaste en un mes pasado, se guarda en ese mes */
-const ymMov=mov.fecha.slice(0,7);
+/* si lo fechaste en un mes pasado, se guarda en ese mes.
+   El mes sale de la hora del teléfono: mov.fecha va en hora universal y el
+   31 de octubre a las 7 de la noche ya es 1 de noviembre allá. */
+const fMov=new Date(mov.fecha);
+const ymMov=fMov.getFullYear()+'-'+String(fMov.getMonth()+1).padStart(2,'0');
 if(ymMov!==ymActual){ await cargarMes(ymMov); cacheMes[ymMov]=(cacheMes[ymMov]||[]).concat([mov]); otroMes=ymMov; }
 else movs.push(mov);
 }
