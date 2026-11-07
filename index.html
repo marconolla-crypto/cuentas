@@ -2054,8 +2054,11 @@ pinta();
 document.getElementById('mvS').addEventListener('click',async()=>{
 const m=Number(document.getElementById('mvM').value)||0;
 if(!de||!a||de===a||!(m>0)){ toast('Elige las dos bolsas y un monto'); return; }
+/* la fecha del teléfono: en hora universal, después de las 6 de la tarde ya es mañana */
+const d=new Date();
 traspasos.push({id:'t'+Date.now().toString(36),de,a,monto:m,
-fecha:new Date().toISOString().slice(0,10),nota:document.getElementById('mvN').value.trim()});
+fecha:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
+nota:document.getElementById('mvN').value.trim()});
 cerrarModal(); renderFondos(); toast('Movido '+mxn(m));
 if(db){ try{ await db.doc('config/traspasos').set({items:traspasos}); }catch(e){} }
 });
