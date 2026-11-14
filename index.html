@@ -153,6 +153,9 @@ font-size:14px;font-weight:600;padding:14px 4px;cursor:pointer}
 .note,.inp{width:100%;font-family:var(--ui);font-size:17px;padding:15px 14px;border-radius:11px;
 border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .inp{font-family:var(--num);text-align:right;width:100%;max-width:100%;min-width:0}
+/* el iPhone le da a la fecha un ancho propio y se sale de la caja: sin estilo nativo respeta el 100% */
+input.inp[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-height:52px}
+input.inp[type="date"]::-webkit-date-and-time-value{text-align:right;margin:0}
 .note:focus-visible,.inp:focus-visible{outline:2px solid var(--accent);outline-offset:-1px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:92px;z-index:60;background:var(--ink);color:var(--ground);
 font-size:13px;font-weight:500;padding:9px 16px;border-radius:999px;opacity:0;pointer-events:none;max-width:92vw;text-align:center}
