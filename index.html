@@ -650,6 +650,8 @@ let recurExtra=[], recurBaja=[];
 function RECURRENTES_VIVOS(){
   return RECUR_BASE.concat(recurExtra).filter(r=>!recurBaja.includes(r.id));
 }
+/* un pago con principio y fin (p. ej. meses sin intereses): solo cuenta de `desde` a `hasta`, en 'AAAA-MM' */
+function vigente(r,ym){ return (!r.desde||ym>=r.desde) && (!r.hasta||ym<=r.hasta); }
 const PERSONAS = ['Marco','Ana'];
 const ARRANQUE = '2026-09';
 const mxn = n => '$' + Math.round(n).toLocaleString('es-MX');
@@ -1111,7 +1113,7 @@ return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.g
 function fISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function ocurrencias(){
 const y=hoy.getFullYear(), m=hoy.getMonth(), dm=new Date(y,m+1,0).getDate(), out=[];
-RECURRENTES_VIVOS().forEach(r=>{
+RECURRENTES_VIVOS().filter(r=>vigente(r,ymActual)).forEach(r=>{
 if(r.freq==='mensual'){
 if(r.meses && !r.meses.includes(m+1)) return;
 const f=new Date(y,m,Math.min(r.dia,dm));
@@ -1163,6 +1165,7 @@ pend.forEach((o,ix)=>{
 html+='<div class="recitem"><div><div class="rn">'+esc(o.r.nom)+'</div><div class="rm">'+
 o.fecha.getDate()+' '+MESES_L[o.fecha.getMonth()]+' · '+esc(o.r.grupo)+
 (o.r.nota?' · '+esc(o.r.nota):'')+(o.r.variable?' · el monto cambia':'')+
+(o.r.hasta?' · hasta '+MESES_L[Number(o.r.hasta.slice(5))-1]+' '+o.r.hasta.slice(0,4):'')+
 (o.r.verificar?' · verifica el monto':'')+'</div></div>'+
 '<input class="inp" id="rec_'+ix+'" data-clave="'+esc(o.clave)+'" type="number" inputmode="decimal" step="0.01" value="'+montoRec(o.r)+'" style="padding:8px 10px">'+
 '<div class="recacts"><button type="button" class="ok" data-a="ok" data-i="'+ix+'">Confirmar</button>'+
@@ -1233,7 +1236,7 @@ for(let d=1;d<=dm;d++) if(new Date(y,m,d).getDay()===5) n++; return n; }
 /* lo fijo que cae en un mes concreto, por rubro */
 function fijoDelMes(ym){
 const [y,m]=ym.split('-').map(Number), dm=new Date(y,m,0).getDate(), out={};
-RECURRENTES_VIVOS().filter(r=>r.bucket==='OPEX').forEach(r=>{
+RECURRENTES_VIVOS().filter(r=>r.bucket==='OPEX' && vigente(r,ym)).forEach(r=>{
 let v=0;
 if(r.freq==='mensual'){ if(!r.meses || r.meses.includes(m)) v=montoRec(r); }
 else if(r.freq==='semanal') v=montoRec(r)*viernesDelMes(y,m-1);
@@ -1244,7 +1247,7 @@ return out;
 /* lo fijo que ya venció a una fecha del mes */
 function fijoVencido(ym,dia){
 const [y,m]=ym.split('-').map(Number), out={};
-RECURRENTES_VIVOS().filter(r=>r.bucket==='OPEX').forEach(r=>{
+RECURRENTES_VIVOS().filter(r=>r.bucket==='OPEX' && vigente(r,ym)).forEach(r=>{
 let v=0;
 if(r.freq==='mensual'){ if((!r.meses||r.meses.includes(m)) && r.dia<=dia) v=montoRec(r); }
 else if(r.freq==='semanal'){ let n=0; for(let d=1;d<=dia;d++) if(new Date(y,m-1,d).getDay()===5) n++; v=montoRec(r)*n; }
