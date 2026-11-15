@@ -1090,20 +1090,27 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarModal(); });
 /* El pago del Depto Playa baja solo: el seguro de vida va pegado al saldo.
    Mi mitad del crédito, anclada al pago del 17 de septiembre de 2026. */
 const PLAYA={ancla:'2026-09', saldo:1225699.56, ero:16993.43, fVida:0.0006179, danos:503.29,
-  inicio:'2025-11', escalones:[0.0975,0.0955,0.0935,0.0915,0.09]};
+  inicio:'2025-10', escalones:[0.0975,0.0955,0.0935,0.0915,0.09],
+  /* Tramos posteriores, cada uno calibrado con el banco. Nov-2026: estado de cuenta de oct
+     (corte 19-oct, tasa 9.55%) + prepago de $100,000 del 21-oct, mitad y mitad con mi suegro.
+     Pago #13 total 36,441.22 = 34,184.42 + 0.06% × 2,337,019.56 + 854.59; aquí va mi mitad. */
+  tramos:[{ancla:'2026-11', saldo:1168509.78, ero:17092.21, fVida:0.0006, danos:427.30}]};
 function mesesEntre(a,b){ const [ay,am]=a.split('-').map(Number), [by,bm]=b.split('-').map(Number);
   return (by-ay)*12+(bm-am); }
 function tasaPlaya(ym){ const k=Math.floor(mesesEntre(PLAYA.inicio,ym)/12);
   return PLAYA.escalones[Math.max(0,Math.min(PLAYA.escalones.length-1,k))]; }
 function pagoPlaya(ym){
-  const n=mesesEntre(PLAYA.ancla,ym); if(n<0) return null;
-  let s=PLAYA.saldo, y=PLAYA.ancla;
+  /* el tramo vigente: el último cuyo ancla ya llegó */
+  const t=[PLAYA].concat(PLAYA.tramos||[]).filter(x=>mesesEntre(x.ancla,ym)>=0).pop();
+  if(!t) return null;
+  const n=mesesEntre(t.ancla,ym);
+  let s=t.saldo, y=t.ancla;
   for(let k=0;k<n;k++){
-    s-=(PLAYA.ero - s*tasaPlaya(y)/12); if(s<0) s=0;
+    s-=(t.ero - s*tasaPlaya(y)/12); if(s<0) s=0;
     const [yy,mm]=y.split('-').map(Number); const d=new Date(yy,mm,1);
     y=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   }
-  return Math.round((PLAYA.ero + s*PLAYA.fVida + PLAYA.danos)*100)/100;
+  return Math.round((t.ero + s*t.fVida + t.danos)*100)/100;
 }
 function montoRec(r){
   if(montosRec[r.id]!==undefined) return montosRec[r.id];
@@ -2209,7 +2216,7 @@ r.innerHTML='<div><div class="nm">'+n+'</div><div class="meta">'+sx+'</div></div
 const DEUDA_INFO={
 'Hipoteca casa':{saldo:2506130.78,corte:'4 sep 2026',tasa:0.06,pagoCI:21521.89,seguros:2494.09,
   nota:'Banamex · crédito de empleados · tasa fija de 6%'},
-'Hipoteca Depto Playa':{saldo:1225699.56,corte:'17 sep 2026',tasa:0.0955,pagoCI:16993.43,seguros:1260.65,
+'Hipoteca Depto Playa':{saldo:1168509.78,corte:'21 oct 2026, con el prepago',tasa:0.0955,pagoCI:17092.21,seguros:1128.41,
   nota:'Scotiabank · mi mitad del crédito con mi suegro · tasa que baja por escalones hasta 9%'},
 'Mantenimiento Fuentes (deuda)':{saldo:485451.67,corte:'septiembre 2026',tasa:0,pagoCI:9200.29,seguros:0,
   nota:'Préstamo de papás. Sin intereses: cada pago baja el saldo completo.'}
