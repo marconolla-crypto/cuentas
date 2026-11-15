@@ -1090,8 +1090,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarModal(); });
 /* El pago del Depto Playa baja solo: el seguro de vida va pegado al saldo.
    Mi mitad del crédito, anclada al pago del 17 de septiembre de 2026. */
 const PLAYA={ancla:'2026-09', saldo:1225699.56, ero:16993.43, fVida:0.0006179, danos:503.29,
-  inicio:'2025-10', escalones:[0.0975,0.0955,0.0935,0.0915,0.09],
-  /* Tramos posteriores, cada uno calibrado con el banco. Nov-2026: estado de cuenta de oct
+  inicio:'2025-11', escalones:[0.0975,0.0955,0.0935,0.0915,0.09],
+  /* Escalones: 9.75% del pago #1 (nov-2025) al #12 (oct-2026), 9.55% desde el #13; el banco
+     cobra intereses por días reales (actual/360), aquí se aproxima por mes.
+     Tramos posteriores, cada uno calibrado con el banco. Nov-2026: estado de cuenta de oct
      (corte 19-oct, tasa 9.55%) + prepago de $100,000 del 21-oct, mitad y mitad con mi suegro.
      Pago #13 total 36,441.22 = 34,184.42 + 0.06% × 2,337,019.56 + 854.59; aquí va mi mitad. */
   tramos:[{ancla:'2026-11', saldo:1168509.78, ero:17092.21, fVida:0.0006, danos:427.30}]};
