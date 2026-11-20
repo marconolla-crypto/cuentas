@@ -669,6 +669,10 @@ const ymActual=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
 document.getElementById('periodo').textContent=MESES_L[hoy.getMonth()]+' '+hoy.getFullYear();
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),2200); }
+/* baseMes[ym]: la última versión del mes que este teléfono bajó del servidor, de la que salen
+   movs/cacheMes. Al guardar se mezcla contra ella (20-nov-2026: guardar antes de cargar borró noviembre). */
+let mesCargado=false, baseMes={};
+const copia=o=>JSON.parse(JSON.stringify(o));
 let db=null, movs=[], ingresos=[], rubrosExtra=[], montosRec={}, omisiones=[], ajustesCorr={};
 /* los rubros guardados con nombres viejos de sección siguen encontrando su lugar */
 const SEC_VIEJAS={'Bolsas que vamos llenando':'Bolsas','Lo que estamos pagando':'Planes',
@@ -906,9 +910,19 @@ async function persistir(ym){
 ym = ym || ymActual;
 renderRegistros(); renderRecurrentes(); renderMes(); renderFondos();
 if(!db) return;
-const it = ym===ymActual ? movs : (cacheMes[ym]||[]);
-const ing = ym===ymActual ? ingresos : [];
-try{ await db.doc('movimientos/'+ym).set({ym:ym,items:it,ingresos:ing}); }
+if(ym===ymActual ? !mesCargado : !cacheMes[ym]){ toast('Todavía está cargando el mes; no se guardó'); return; }
+const it = ym===ymActual ? movs : cacheMes[ym];
+/* los ingresos solo viven en el mes en curso; en otro mes se conservan los del servidor */
+const ing = ym===ymActual ? ingresos : ((baseMes[ym]||{}).ingresos||[]);
+try{
+  const fin=await db.doc('movimientos/'+ym).set({ym:ym,items:it,ingresos:ing}, baseMes[ym]||null);
+  if(fin && fin.items){
+    baseMes[ym]=copia(fin);
+    if(ym===ymActual){ movs=fin.items.slice(); ingresos=(fin.ingresos||[]).slice(); }
+    else cacheMes[ym]=fin.items.slice();
+    renderRegistros(); renderRecurrentes(); renderMes(); renderFondos();
+  }
+}
 catch(e){ toast('Guardado aquí; no se pudo sincronizar'); }
 }
 function fechaCaptura(){
@@ -917,6 +931,7 @@ const n=new Date();
 return new Date(cap.fecha+'T'+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':00').toISOString();
 }
 async function guardarCaptura(){
+if(db && !mesCargado){ toast('Espera un segundo: todavía está cargando el mes'); return; }
 let otroMes=null;
 const v=totalCaptura();
 const partes = cap.tickets.length
@@ -938,7 +953,9 @@ nota:document.getElementById('nota').value.trim(),fecha:fechaCaptura()};
    31 de octubre a las 7 de la noche ya es 1 de noviembre allá. */
 const fMov=new Date(mov.fecha);
 const ymMov=fMov.getFullYear()+'-'+String(fMov.getMonth()+1).padStart(2,'0');
-if(ymMov!==ymActual){ await cargarMes(ymMov); cacheMes[ymMov]=(cacheMes[ymMov]||[]).concat([mov]); otroMes=ymMov; }
+if(ymMov!==ymActual){ await cargarMes(ymMov);
+  if(!cacheMes[ymMov]){ toast('No se pudo cargar '+MESES_L[Number(ymMov.slice(5))-1]+'; intenta con señal'); return; }
+  cacheMes[ymMov]=cacheMes[ymMov].concat([mov]); otroMes=ymMov; }
 else movs.push(mov);
 }
 cap.monto=''; cap.sel=null; cap.tickets=[]; cap.desglose=null; cap.fecha=null; if(DUENO) cap.persona=DUENO; document.getElementById('nota').value='';
@@ -1295,8 +1312,11 @@ function ymSuma(ym,k){ const [y,m]=ym.split('-').map(Number); const d=new Date(y
 return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 const YM_MIN='2019-03';
 async function cargarMes(ym){ if(ym===ymActual||cacheMes[ym]||!db) return;
+/* si falla, el mes se queda sin cargar (no vacío): así nadie guarda encima de lo que no vio */
 try{ const s=await db.doc('movimientos/'+ym).get();
-cacheMes[ym]=(s.exists&&Array.isArray(s.data().items))?s.data().items:[]; }catch(e){ cacheMes[ym]=[]; } }
+const d=s.exists?s.data():{items:[],ingresos:[]};
+cacheMes[ym]=Array.isArray(d.items)?d.items:[];
+baseMes[ym]=copia({ym:ym,items:cacheMes[ym],ingresos:d.ingresos||[]}); }catch(e){} }
 async function irAMes(ym){ if(ym<YM_MIN||ym>ymActual) return; mesVista=ym; await cargarMes(ym); renderMes(); }
 function diasDelMes(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
 function diaCorte(ym){ return ym===ymActual ? hoy.getDate() : diasDelMes(ym); }
@@ -2410,17 +2430,23 @@ if(pend) d = m.envuelve ? pend.local : mezclaMes(d,pend.base,pend.local);
 if(!d) return {exists:false,data:()=>({})};
 return {exists:true,data:()=>d};
 },
-async set(obj){
-try{ await escribe(obj); }
+/* base (solo meses): la versión de la que partió obj. Con ella se mezcla contra lo que haya
+   en el servidor en vez de escribir encima; devuelve lo que quedó guardado. */
+async set(obj,base){
+let fin=obj;
+try{
+  if(!m.envuelve && base!==undefined){ const remoto=await crudo(); if(remoto===undefined) throw new TypeError('sin red'); fin=mezclaMes(remoto,base,obj); }
+  await escribe(fin);
+}
 catch(e){
 if(!e || e.name!=='TypeError') throw e;         // sin red fetch truena con TypeError; si el servidor dijo que no, eso no se encola
 const pend=lsLee(LS_PEND+ruta);
-lsPon(LS_PEND+ruta,{local:obj, base: pend ? pend.base : lsLee(LS_DOC+ruta)});
+lsPon(LS_PEND+ruta,{local:obj, base: pend ? pend.base : (base!==undefined ? base : lsLee(LS_DOC+ruta))});
 pintaRed(); return true;
 }
 lsPon(LS_PEND+ruta,null);
-lsPon(LS_DOC+ruta, m.envuelve ? obj : Object.assign({ym:m.id},obj));
-pintaRed(); return true;
+lsPon(LS_DOC+ruta, m.envuelve ? fin : Object.assign({ym:m.id},fin));
+pintaRed(); return fin;
 },
 async sube(){
 const pend=lsLee(LS_PEND+ruta); if(!pend) return;
@@ -2486,9 +2512,11 @@ if(!sbSes || !(await sbRenovar())) await sbPideAcceso();
 try{
 db={doc:sbDoc};
 db.doc('movimientos/'+ymActual).onSnapshot(s=>{
+if(!editando && !s.exists && !mesCargado){ baseMes[ymActual]={ym:ymActual,items:[],ingresos:[]}; mesCargado=true; }
 if(s.exists && !editando){ const d=s.data();
 if(Array.isArray(d.items)) movs=d.items.slice();
 if(Array.isArray(d.ingresos)) ingresos=d.ingresos.slice();
+baseMes[ymActual]=copia({ym:ymActual,items:movs,ingresos:ingresos}); mesCargado=true;
 renderRegistros(); renderRecurrentes(); renderMes(); renderFondos(); renderDeudas(); }
 },()=>{});
 db.doc('config/recurrentes').onSnapshot(s=>{ if(s.exists){ const d=s.data();
